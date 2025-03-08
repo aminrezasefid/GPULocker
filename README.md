@@ -8,9 +8,11 @@ GPULocker is a Flask-based web application designed to manage and allocate GPU r
 - **GPU Resource Management**: Allocate specific GPU types to users for defined time periods
 - **Permission Control**: Automatically manages device permissions using ACLs
 - **Usage Monitoring**: Tracks active allocations and monitors GPU usage
+- **Real-time GPU Status**: Provides real-time monitoring of GPU utilization and memory usage
 - **Disk Usage Statistics**: Provides users with information about their disk usage
 - **Automatic Cleanup**: Releases expired or idle GPU allocations
 - **Admin Controls**: Special privileges for system administrators to manage all allocations
+- **API Endpoints**: REST API for accessing GPU status information
 
 ## Requirements
 
@@ -39,12 +41,14 @@ pip install -r requirements.txt
 SECRET_KEY=your_secret_key_here
 GPU_CONFIG={'A100': [0, 1, 2, 3], 'V100': [4, 5, 6, 7]}
 PRIVILEGED_USERS=admin1,admin2
+GPUs_STATUS_REFRESH_RATE=5
 USER_PENALTY=24
 CHECK_FOR_IDLE_GPU=6
 DISK_CACHE_TIMEOUT=600
 HOST=0.0.0.0
 PORT=5151
 ```
+
 
 4. Ensure MongoDB is running:
 ```bash
@@ -64,6 +68,7 @@ python gpulocker.py
 - `USER_PENALTY`: Hours to wait after expiration before forcibly releasing GPUs
 - `CHECK_FOR_IDLE_GPU`: Hours between checks for idle/expired allocations
 - `DISK_CACHE_TIMEOUT`: Seconds to cache disk usage information
+- `GPUs_STATUS_REFRESH_RATE`: Refresh rate in seconds for GPU status monitoring
 - `HOST`: Host address to bind the server
 - `PORT`: Port to run the server on
 
@@ -74,6 +79,7 @@ python gpulocker.py
 3. View available GPUs and your current allocations
 4. Request GPU resources by selecting the type and duration
 5. Release GPUs when you're done using them
+6. Monitor GPU utilization and memory usage in real-time on the Schedule page
 
 ## Admin Features
 
@@ -81,6 +87,10 @@ Administrators (users listed in `PRIVILEGED_USERS`) have additional capabilities
 - View all active allocations across users
 - Release any user's GPU allocation
 - Reset the entire system if needed
+
+## API Endpoints
+
+- `/api/gpu_status`: Returns real-time GPU status information in JSON format
 
 ## Security
 

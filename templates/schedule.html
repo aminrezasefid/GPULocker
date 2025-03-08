@@ -2,9 +2,59 @@
 
 {% block title %}Schedule{% endblock %}
 
+{% block extra_head %}
+<style>
+    .gpu-status-container {
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
+    .gpu-card {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background-color: #f8f9fa;
+    }
+    .gpu-card h3 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+    }
+    .gpu-utilization, .gpu-memory {
+        margin-bottom: 0.5rem;
+    }
+    .progress-bar-green {
+        background-color: #28a745;
+    }
+    .progress-bar-orange {
+        background-color: #fd7e14;
+    }
+    .progress-bar-red {
+        background-color: #dc3545;
+    }
+    .last-updated {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-align: right;
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <h1>GPU Schedule</h1>
+
+<!-- GPU Status Section -->
+<div class="gpu-status-container">
+    <h2>GPU Status</h2>
+    <div id="gpu-status-cards">
+        <!-- GPU status cards will be inserted here by JavaScript -->
+    </div>
+    <p class="last-updated">Last updated: <span id="last-updated-time">Now</span></p>
+</div>
+
+<!-- Allocations Table -->
 {% if allocations %}
+    <h2>Active Allocations</h2>
     <table class="table">
         <thead>
             <tr>
@@ -30,4 +80,65 @@
 {% else %}
     <p>No active GPU allocations found.</p>
 {% endif %}
+
+<script>
+    // Function to update GPU status
+    function updateGPUStatus() {
+        fetch('/api/gpu_status')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('gpu-status-cards');
+                container.innerHTML = ''; // Clear existing cards
+                
+                // Sort GPU IDs numerically
+                const gpuIds = Object.keys(data).map(Number).sort((a, b) => a - b);
+                
+                // Create a card for each GPU
+                for (const gpuId of gpuIds) {
+                    const gpu = data[gpuId];
+                    const card = document.createElement('div');
+                    card.className = 'gpu-card';
+                    
+                    // Determine color classes based on utilization and memory usage
+                    let utilizationClass = 'progress-bar-green';
+                    if (gpu.utilization > 50) utilizationClass = 'progress-bar-orange';
+                    if (gpu.utilization > 80) utilizationClass = 'progress-bar-red';
+                    
+                    let memoryClass = 'progress-bar-green';
+                    if (gpu.memory_percent > 50) memoryClass = 'progress-bar-orange';
+                    if (gpu.memory_percent > 80) memoryClass = 'progress-bar-red';
+                    
+                    card.innerHTML = `
+                        <h3>GPU ${gpuId} (${gpu.gpu_type || 'Unknown'})</h3>
+                        <div class="gpu-utilization">
+                            <p>Utilization: ${gpu.utilization.toFixed(1)}%</p>
+                            <div class="progress">
+                                <div class="progress-bar ${utilizationClass}" style="width: ${gpu.utilization}%"></div>
+                            </div>
+                        </div>
+                        <div class="gpu-memory">
+                            <p>Memory: ${gpu.memory_used.toFixed(0)} MB / ${gpu.memory_total.toFixed(0)} MB (${gpu.memory_percent.toFixed(1)}%)</p>
+                            <div class="progress">
+                                <div class="progress-bar ${memoryClass}" style="width: ${gpu.memory_percent}%"></div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(card);
+                }
+                
+                // Update last updated time
+                document.getElementById('last-updated-time').textContent = new Date().toLocaleTimeString();
+            })
+            .catch(error => {
+                console.error('Error fetching GPU status:', error);
+            });
+    }
+    
+    // Initial update
+    updateGPUStatus();
+    
+    // Set up periodic updates
+    setInterval(updateGPUStatus, {{ refresh_rate_ms }});
+</script>
 {% endblock %} 

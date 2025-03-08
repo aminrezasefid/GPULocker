@@ -148,6 +148,10 @@ fileHandler.setFormatter(logFormatter)
 logger.addHandler(consoleHandler)
 logger.addHandler(fileHandler)
 
+# Disable Flask's default logging for specific routes
+import logging as flask_logging
+#flask_logging.getLogger('werkzeug').setLevel(flask_logging.ERROR)
+
 app = Flask(__name__)
 app.secret_key = config('SECRET_KEY')
 
@@ -666,6 +670,73 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('login'))
 
+def get_gpu_status():
+    """Get current GPU status information
+    
+    Returns:
+        dict: Dictionary with GPU IDs as keys and status information as values
+    """
+    try:
+        gpu_status = {}
+        
+        # Run nvidia-smi to get GPU utilization and memory usage
+        nvidia_smi = subprocess.run(
+            ['nvidia-smi', '--query-gpu=index,utilization.gpu,memory.used,memory.total', '--format=csv,noheader,nounits'],
+            capture_output=True, text=True, check=True
+        )
+        
+        # Parse the output
+        for line in nvidia_smi.stdout.strip().split('\n'):
+            if not line.strip():
+                continue
+                
+            parts = [part.strip() for part in line.split(',')]
+            if len(parts) >= 4:
+                gpu_id = int(parts[0])
+
+                utilization = float(parts[1])
+                memory_used = float(parts[2])
+                memory_total = float(parts[3])
+                
+                # Find which GPU type this ID belongs to
+                gpu_type = None
+                found=False
+                for type_name, ids in GPU_DICT.items():
+                    if gpu_id in ids:
+                        found=True
+                        gpu_type = type_name
+                        break
+                if found==False:
+                    continue
+                gpu_status[gpu_id] = {
+                    'gpu_type': gpu_type,
+                    'utilization': utilization,
+                    'memory_used': memory_used,
+                    'memory_total': memory_total,
+                    'memory_percent': (memory_used / memory_total) * 100 if memory_total > 0 else 0
+                }
+        
+        return gpu_status
+    except Exception as e:
+        logger.error(f"Error getting GPU status: {str(e)}")
+        return {}
+
+# Create a custom filter for Flask's werkzeug logger
+class APIStatusFilter(flask_logging.Filter):
+    def filter(self, record):
+        # Check if this is a log for /api/gpu_status with 200 status
+        if ' 200 ' in record.getMessage() and '/api/gpu_status' in record.getMessage():
+            return False  # Don't log this record
+        return True  # Log all other records
+
+# Apply the filter to werkzeug logger
+flask_logging.getLogger('werkzeug').addFilter(APIStatusFilter())
+
+@app.route('/api/gpu_status')
+def api_gpu_status():
+    """API endpoint to get GPU status in JSON format"""
+    return get_gpu_status()
+
 @app.route('/schedule')
 @login_required
 def schedule():
@@ -683,7 +754,17 @@ def schedule():
         logger.error(f"Error fetching schedule: {str(e)}")
         allocations = []
     
-    return render_template('schedule.html', allocations=allocations)
+    # Get initial GPU status for first page load
+    gpu_status = get_gpu_status()
+    
+    # Get refresh rate from .env
+    refresh_rate = config('GPUs_STATUS_REFRESH_RATE', default=5, cast=float)
+    refresh_rate_ms = int(refresh_rate * 1000)  # Convert to milliseconds
+    
+    return render_template('schedule.html', 
+                          allocations=allocations, 
+                          gpu_status=gpu_status,
+                          refresh_rate_ms=refresh_rate_ms)
 
 
 def check_expired_reservations():
