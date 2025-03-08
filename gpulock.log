@@ -2212,3 +2212,262 @@
 2025-03-08 17:21:16 - INFO :: Found 0 active allocations to check
 2025-03-08 17:21:16 - INFO :: Found 0 allocations within penalty period to check for GPU usage
 2025-03-08 17:21:16 - INFO :: Completed checking all active allocations
+2025-03-08 17:31:15 - INFO :: Starting GPULocker application
+2025-03-08 17:31:15 - INFO :: MongoDB connection and setup completed successfully
+2025-03-08 17:31:15 - INFO :: Initialized available GPUs: {'4090': [1, 2, 3, 4]}
+2025-03-08 17:31:15 - DEBUG :: Reset permissions for GPU 1 to 660
+2025-03-08 17:31:15 - DEBUG :: Reset permissions for GPU 2 to 660
+2025-03-08 17:31:15 - DEBUG :: Reset permissions for GPU 3 to 660
+2025-03-08 17:31:15 - DEBUG :: Reset permissions for GPU 4 to 660
+2025-03-08 17:31:15 - DEBUG :: Attempting to reset user-specific GPU access
+2025-03-08 17:31:15 - DEBUG :: Granted access to GPU 1 for user armin
+2025-03-08 17:31:15 - DEBUG :: Granted access to GPU 1 for user armin
+2025-03-08 17:31:15 - DEBUG :: Granted access to GPU 1 for user amin
+2025-03-08 17:31:15 - DEBUG :: Granted access to GPU 1 for user amin
+2025-03-08 17:31:15 - DEBUG :: Granted access to GPU 2 for user armin
+2025-03-08 17:31:15 - DEBUG :: Granted access to GPU 2 for user armin
+2025-03-08 17:31:15 - DEBUG :: Granted access to GPU 2 for user amin
+2025-03-08 17:31:15 - DEBUG :: Granted access to GPU 2 for user amin
+2025-03-08 17:31:15 - INFO :: Successfully reset and configured user-specific GPU access
+2025-03-08 17:31:15 - INFO :: Running scheduled check for expired reservations
+2025-03-08 17:31:15 - INFO :: Found 0 active allocations to check
+2025-03-08 17:31:15 - INFO :: Found 0 allocations within penalty period to check for GPU usage
+2025-03-08 17:31:15 - INFO :: Completed checking all active allocations
+2025-03-08 17:32:16 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:32:16 - DEBUG :: Calculating disk usage for user amin
+2025-03-08 17:32:28 - INFO :: User amin requested GPUs: {'4090': 1} for days: {'4090': 1}
+2025-03-08 17:32:28 - DEBUG :: Requested GPU resources are available
+2025-03-08 17:32:28 - DEBUG :: Allocating GPU 1 (4090) to user amin for 1 days
+2025-03-08 17:32:28 - DEBUG :: Granted access to GPU 1 for user amin
+2025-03-08 17:32:28 - DEBUG :: Set permissions for GPU 1 for user amin
+2025-03-08 17:32:28 - INFO :: Granted access to GPU 1 (4090) for user amin until 2025-03-09 17:32:28.480178
+2025-03-08 17:32:29 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:32:29 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:33:49 - DEBUG :: Releasing GPU 1 (4090) from user amin
+2025-03-08 17:33:49 - DEBUG :: Added GPU 1 back to available pool
+2025-03-08 17:33:49 - DEBUG :: Updated allocation 67cc4df4b590ef6eac203e70 status: released=True
+2025-03-08 17:33:49 - DEBUG :: Updated allocation 67cc4df4b590ef6eac203e70 status to released
+2025-03-08 17:33:49 - DEBUG :: Removed access to GPU 1 for user amin
+2025-03-08 17:33:49 - INFO :: Successfully released GPU 1 from user amin
+2025-03-08 17:33:50 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:33:50 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:36:15 - DEBUG :: Clearing disk usage cache
+2025-03-08 17:37:32 - INFO :: Starting GPULocker application
+2025-03-08 17:37:32 - INFO :: MongoDB connection and setup completed successfully
+2025-03-08 17:37:32 - INFO :: Initialized available GPUs: {'4090': [1, 2, 3, 4]}
+2025-03-08 17:37:32 - DEBUG :: Reset permissions for GPU 1 to 660
+2025-03-08 17:37:32 - DEBUG :: Reset permissions for GPU 2 to 660
+2025-03-08 17:37:32 - DEBUG :: Reset permissions for GPU 3 to 660
+2025-03-08 17:37:32 - DEBUG :: Reset permissions for GPU 4 to 660
+2025-03-08 17:37:32 - DEBUG :: Attempting to reset user-specific GPU access
+2025-03-08 17:37:32 - DEBUG :: Granted access to GPU 1 for user amin
+2025-03-08 17:37:32 - DEBUG :: Granted access to GPU 1 for user amin
+2025-03-08 17:37:32 - INFO :: Successfully reset and configured user-specific GPU access
+2025-03-08 17:37:32 - INFO :: Running scheduled check for expired reservations
+2025-03-08 17:37:32 - INFO :: Found 0 active allocations to check
+2025-03-08 17:37:32 - INFO :: Found 0 allocations within penalty period to check for GPU usage
+2025-03-08 17:37:32 - INFO :: Completed checking all active allocations
+2025-03-08 17:37:46 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:37:46 - DEBUG :: Calculating disk usage for user amin
+2025-03-08 17:37:57 - INFO :: User amin requested GPUs: {'4090': 1} for days: {'4090': 1}
+2025-03-08 17:37:57 - DEBUG :: Requested GPU resources are available
+2025-03-08 17:37:57 - DEBUG :: Allocating GPU 1 (4090) to user amin for 1 days
+2025-03-08 17:37:57 - DEBUG :: Granted access to GPU 1 for user amin
+2025-03-08 17:37:57 - DEBUG :: Set permissions for GPU 1 for user amin
+2025-03-08 17:37:57 - INFO :: Granted access to GPU 1 (4090) for user amin until 2025-03-09 17:37:57.456334
+2025-03-08 17:37:58 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:37:58 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:38:09 - DEBUG :: Releasing GPU 1 (4090) from user amin
+2025-03-08 17:38:09 - INFO :: Terminating process 4117814 owned by amin on GPU 1
+2025-03-08 17:38:09 - DEBUG :: Terminated all processes for user amin on GPU 1
+2025-03-08 17:38:09 - DEBUG :: Added GPU 1 back to available pool
+2025-03-08 17:38:09 - DEBUG :: Updated allocation 67cc4f3db12e9a9a678280fa status: released=True
+2025-03-08 17:38:09 - DEBUG :: Updated allocation 67cc4f3db12e9a9a678280fa status to released
+2025-03-08 17:38:09 - DEBUG :: Removed access to GPU 1 for user amin
+2025-03-08 17:38:09 - INFO :: Successfully released GPU 1 from user amin
+2025-03-08 17:38:10 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:38:10 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:42:32 - DEBUG :: Clearing disk usage cache
+2025-03-08 17:47:32 - DEBUG :: Clearing disk usage cache
+2025-03-08 17:50:51 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:50:51 - DEBUG :: Calculating disk usage for user amin
+2025-03-08 17:51:01 - INFO :: Starting GPULocker application
+2025-03-08 17:51:01 - INFO :: MongoDB connection and setup completed successfully
+2025-03-08 17:51:01 - INFO :: Initialized available GPUs: {'4090': [1, 2, 3, 4]}
+2025-03-08 17:51:01 - DEBUG :: Reset permissions for GPU 1 to 660
+2025-03-08 17:51:01 - DEBUG :: Reset permissions for GPU 2 to 660
+2025-03-08 17:51:01 - DEBUG :: Reset permissions for GPU 3 to 660
+2025-03-08 17:51:01 - DEBUG :: Reset permissions for GPU 4 to 660
+2025-03-08 17:51:01 - DEBUG :: Attempting to reset user-specific GPU access
+2025-03-08 17:51:01 - DEBUG :: Granted access to GPU 1 for user amin
+2025-03-08 17:51:01 - DEBUG :: Granted access to GPU 1 for user amin
+2025-03-08 17:51:01 - INFO :: Successfully reset and configured user-specific GPU access
+2025-03-08 17:51:01 - INFO :: Running scheduled check for expired reservations
+2025-03-08 17:51:01 - INFO :: Found 0 active allocations to check
+2025-03-08 17:51:01 - INFO :: Found 0 allocations within penalty period to check for GPU usage
+2025-03-08 17:51:01 - INFO :: Completed checking all active allocations
+2025-03-08 17:51:09 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:51:09 - DEBUG :: Calculating disk usage for user amin
+2025-03-08 17:51:37 - INFO :: User testamin successfully logged in
+2025-03-08 17:51:38 - DEBUG :: User testamin accessed dashboard
+2025-03-08 17:51:38 - DEBUG :: Calculating disk usage for user testamin
+2025-03-08 17:51:45 - INFO :: User testamin requested GPUs: {'4090': 4} for days: {'4090': 6}
+2025-03-08 17:51:45 - DEBUG :: Requested GPU resources are available
+2025-03-08 17:51:45 - DEBUG :: Allocating GPU 1 (4090) to user testamin for 6 days
+2025-03-08 17:51:45 - DEBUG :: Granted access to GPU 1 for user testamin
+2025-03-08 17:51:45 - DEBUG :: Set permissions for GPU 1 for user testamin
+2025-03-08 17:51:45 - INFO :: Granted access to GPU 1 (4090) for user testamin until 2025-03-14 17:51:45.410517
+2025-03-08 17:51:45 - DEBUG :: Allocating GPU 2 (4090) to user testamin for 6 days
+2025-03-08 17:51:45 - DEBUG :: Granted access to GPU 2 for user testamin
+2025-03-08 17:51:45 - DEBUG :: Set permissions for GPU 2 for user testamin
+2025-03-08 17:51:45 - INFO :: Granted access to GPU 2 (4090) for user testamin until 2025-03-14 17:51:45.431592
+2025-03-08 17:51:45 - DEBUG :: Allocating GPU 3 (4090) to user testamin for 6 days
+2025-03-08 17:51:45 - DEBUG :: Granted access to GPU 3 for user testamin
+2025-03-08 17:51:45 - DEBUG :: Set permissions for GPU 3 for user testamin
+2025-03-08 17:51:45 - INFO :: Granted access to GPU 3 (4090) for user testamin until 2025-03-14 17:51:45.447735
+2025-03-08 17:51:45 - DEBUG :: Allocating GPU 4 (4090) to user testamin for 6 days
+2025-03-08 17:51:45 - DEBUG :: Granted access to GPU 4 for user testamin
+2025-03-08 17:51:45 - DEBUG :: Set permissions for GPU 4 for user testamin
+2025-03-08 17:51:45 - INFO :: Granted access to GPU 4 (4090) for user testamin until 2025-03-14 17:51:45.465011
+2025-03-08 17:51:46 - DEBUG :: User testamin accessed dashboard
+2025-03-08 17:51:46 - DEBUG :: Using cached disk usage for user testamin
+2025-03-08 17:52:13 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:52:13 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:52:21 - DEBUG :: Releasing GPU 1 (4090) from user testamin
+2025-03-08 17:52:21 - DEBUG :: Terminated all processes for user testamin on GPU 1
+2025-03-08 17:52:21 - DEBUG :: Added GPU 1 back to available pool
+2025-03-08 17:52:21 - DEBUG :: Updated allocation 67cc527941c830514377ad2c status: released=True
+2025-03-08 17:52:21 - DEBUG :: Updated allocation 67cc527941c830514377ad2c status to released
+2025-03-08 17:52:21 - DEBUG :: Removed access to GPU 1 for user testamin
+2025-03-08 17:52:21 - INFO :: Successfully released GPU 1 from user testamin
+2025-03-08 17:52:21 - INFO :: Admin amin released GPU 1 from user testamin
+2025-03-08 17:52:22 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:52:22 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:52:32 - DEBUG :: Releasing GPU 2 (4090) from user testamin
+2025-03-08 17:52:32 - DEBUG :: Terminated all processes for user testamin on GPU 2
+2025-03-08 17:52:32 - DEBUG :: Added GPU 2 back to available pool
+2025-03-08 17:52:32 - DEBUG :: Updated allocation 67cc527941c830514377ad2e status: released=True
+2025-03-08 17:52:32 - DEBUG :: Updated allocation 67cc527941c830514377ad2e status to released
+2025-03-08 17:52:32 - DEBUG :: Removed access to GPU 2 for user testamin
+2025-03-08 17:52:32 - INFO :: Successfully released GPU 2 from user testamin
+2025-03-08 17:52:32 - INFO :: Admin amin released GPU 2 from user testamin
+2025-03-08 17:52:34 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:52:34 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:52:39 - DEBUG :: Releasing GPU 3 (4090) from user testamin
+2025-03-08 17:52:39 - DEBUG :: Terminated all processes for user testamin on GPU 3
+2025-03-08 17:52:39 - DEBUG :: Added GPU 3 back to available pool
+2025-03-08 17:52:39 - DEBUG :: Updated allocation 67cc527941c830514377ad30 status: released=True
+2025-03-08 17:52:39 - DEBUG :: Updated allocation 67cc527941c830514377ad30 status to released
+2025-03-08 17:52:39 - DEBUG :: Removed access to GPU 3 for user testamin
+2025-03-08 17:52:39 - INFO :: Successfully released GPU 3 from user testamin
+2025-03-08 17:52:39 - INFO :: Admin amin released GPU 3 from user testamin
+2025-03-08 17:52:40 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:52:40 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:52:44 - DEBUG :: Releasing GPU 4 (4090) from user testamin
+2025-03-08 17:52:44 - DEBUG :: Terminated all processes for user testamin on GPU 4
+2025-03-08 17:52:44 - DEBUG :: Added GPU 4 back to available pool
+2025-03-08 17:52:44 - DEBUG :: Updated allocation 67cc527941c830514377ad32 status: released=True
+2025-03-08 17:52:44 - DEBUG :: Updated allocation 67cc527941c830514377ad32 status to released
+2025-03-08 17:52:44 - DEBUG :: Removed access to GPU 4 for user testamin
+2025-03-08 17:52:44 - INFO :: Successfully released GPU 4 from user testamin
+2025-03-08 17:52:44 - INFO :: Admin amin released GPU 4 from user testamin
+2025-03-08 17:52:45 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:52:45 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:52:52 - INFO :: User amin requested GPUs: {'4090': 1} for days: {'4090': 1}
+2025-03-08 17:52:52 - DEBUG :: Requested GPU resources are available
+2025-03-08 17:52:52 - DEBUG :: Allocating GPU 1 (4090) to user amin for 1 days
+2025-03-08 17:52:52 - DEBUG :: Granted access to GPU 1 for user amin
+2025-03-08 17:52:52 - DEBUG :: Set permissions for GPU 1 for user amin
+2025-03-08 17:52:52 - INFO :: Granted access to GPU 1 (4090) for user amin until 2025-03-09 17:52:52.542140
+2025-03-08 17:52:53 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:52:53 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:54:05 - INFO :: Starting GPULocker application
+2025-03-08 17:54:05 - INFO :: MongoDB connection and setup completed successfully
+2025-03-08 17:54:05 - INFO :: Initialized available GPUs: {'4090': [1, 2, 3, 4]}
+2025-03-08 17:54:05 - DEBUG :: Reset permissions for GPU 1 to 660
+2025-03-08 17:54:05 - DEBUG :: Reset permissions for GPU 2 to 660
+2025-03-08 17:54:05 - DEBUG :: Reset permissions for GPU 3 to 660
+2025-03-08 17:54:05 - DEBUG :: Reset permissions for GPU 4 to 660
+2025-03-08 17:54:05 - DEBUG :: Attempting to reset user-specific GPU access
+2025-03-08 17:54:05 - DEBUG :: Found active allocation for GPU 1 (4090) for user amin
+2025-03-08 17:54:05 - DEBUG :: Removing GPU 1 from available 4090 GPUs
+2025-03-08 17:54:05 - INFO :: Successfully reset and configured user-specific GPU access
+2025-03-08 17:54:06 - INFO :: Running scheduled check for expired reservations
+2025-03-08 17:54:06 - INFO :: Found 1 active allocations to check
+2025-03-08 17:54:06 - INFO :: Found 0 allocations within penalty period to check for GPU usage
+2025-03-08 17:54:06 - INFO :: Completed checking all active allocations
+2025-03-08 17:54:13 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:54:13 - DEBUG :: Calculating disk usage for user amin
+2025-03-08 17:54:41 - DEBUG :: Releasing GPU 1 (4090) from user amin
+2025-03-08 17:54:41 - DEBUG :: Terminated all processes for user amin on GPU 1
+2025-03-08 17:54:41 - DEBUG :: Added GPU 1 back to available pool
+2025-03-08 17:54:41 - DEBUG :: Updated allocation 67cc52bc41c830514377ad3e status: released=True
+2025-03-08 17:54:41 - DEBUG :: Updated allocation 67cc52bc41c830514377ad3e status to released
+2025-03-08 17:54:41 - DEBUG :: Removed access to GPU 1 for user amin
+2025-03-08 17:54:41 - INFO :: Successfully released GPU 1 from user amin
+2025-03-08 17:54:42 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:54:42 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:54:58 - INFO :: User amin requested GPUs: {'4090': 1} for days: {'4090': 1}
+2025-03-08 17:54:58 - DEBUG :: Requested GPU resources are available
+2025-03-08 17:54:58 - DEBUG :: Allocating GPU 2 (4090) to user amin for 1 days
+2025-03-08 17:54:58 - DEBUG :: Granted access to GPU 2 for user amin
+2025-03-08 17:54:58 - DEBUG :: Set permissions for GPU 2 for user amin
+2025-03-08 17:54:58 - INFO :: Granted access to GPU 2 (4090) for user amin until 2025-03-09 17:54:58.246732
+2025-03-08 17:54:59 - DEBUG :: User amin accessed dashboard
+2025-03-08 17:54:59 - DEBUG :: Using cached disk usage for user amin
+2025-03-08 17:59:06 - DEBUG :: Clearing disk usage cache
+2025-03-08 18:00:08 - DEBUG :: Releasing GPU 2 (4090) from user amin
+2025-03-08 18:00:08 - DEBUG :: Terminated all processes for user amin on GPU 2
+2025-03-08 18:00:08 - DEBUG :: Added GPU 2 back to available pool
+2025-03-08 18:00:08 - DEBUG :: Updated allocation 67cc533af843c871ffeec50c status: released=True
+2025-03-08 18:00:08 - DEBUG :: Updated allocation 67cc533af843c871ffeec50c status to released
+2025-03-08 18:00:08 - DEBUG :: Removed access to GPU 2 for user amin
+2025-03-08 18:00:08 - INFO :: Successfully released GPU 2 from user amin
+2025-03-08 18:00:09 - DEBUG :: User amin accessed dashboard
+2025-03-08 18:00:09 - DEBUG :: Calculating disk usage for user amin
+2025-03-08 18:02:17 - INFO :: Starting GPULocker application
+2025-03-08 18:02:17 - INFO :: MongoDB connection and setup completed successfully
+2025-03-08 18:02:17 - INFO :: Initialized available GPUs: {'4090': [1, 2, 3, 4]}
+2025-03-08 18:02:17 - DEBUG :: Reset permissions for GPU 1 to 660
+2025-03-08 18:02:17 - DEBUG :: Reset permissions for GPU 2 to 660
+2025-03-08 18:02:17 - DEBUG :: Reset permissions for GPU 3 to 660
+2025-03-08 18:02:17 - DEBUG :: Reset permissions for GPU 4 to 660
+2025-03-08 18:02:17 - DEBUG :: Attempting to reset user-specific GPU access
+2025-03-08 18:02:17 - DEBUG :: Removed access to GPU 1 for user armin
+2025-03-08 18:02:17 - DEBUG :: Removed access to GPU 1 for user armin
+2025-03-08 18:02:17 - DEBUG :: Granted access to GPU 1 for user amin
+2025-03-08 18:02:17 - DEBUG :: Granted access to GPU 1 for user amin
+2025-03-08 18:02:17 - DEBUG :: Removed access to GPU 2 for user armin
+2025-03-08 18:02:17 - DEBUG :: Removed access to GPU 2 for user armin
+2025-03-08 18:02:17 - DEBUG :: Granted access to GPU 2 for user amin
+2025-03-08 18:02:17 - DEBUG :: Granted access to GPU 2 for user amin
+2025-03-08 18:02:17 - DEBUG :: Removed access to GPU 3 for user armin
+2025-03-08 18:02:17 - DEBUG :: Removed access to GPU 3 for user armin
+2025-03-08 18:02:17 - DEBUG :: Removed access to GPU 4 for user armin
+2025-03-08 18:02:17 - DEBUG :: Removed access to GPU 4 for user armin
+2025-03-08 18:02:17 - INFO :: Successfully reset and configured user-specific GPU access
+2025-03-08 18:02:17 - INFO :: Running scheduled check for expired reservations
+2025-03-08 18:02:17 - INFO :: Found 0 active allocations to check
+2025-03-08 18:02:17 - INFO :: Found 0 allocations within penalty period to check for GPU usage
+2025-03-08 18:02:17 - INFO :: Completed checking all active allocations
+2025-03-08 18:04:40 - DEBUG :: User amin accessed dashboard
+2025-03-08 18:04:40 - DEBUG :: Calculating disk usage for user amin
+2025-03-08 18:07:18 - DEBUG :: Clearing disk usage cache
+2025-03-08 18:08:18 - INFO :: User hosna successfully logged in
+2025-03-08 18:08:18 - DEBUG :: User hosna accessed dashboard
+2025-03-08 18:08:18 - DEBUG :: Calculating disk usage for user hosna
+2025-03-08 18:12:18 - DEBUG :: Clearing disk usage cache
+2025-03-08 18:17:18 - DEBUG :: Clearing disk usage cache
+2025-03-08 18:22:19 - DEBUG :: Clearing disk usage cache
+2025-03-08 18:23:07 - INFO :: User frahmani successfully logged in
+2025-03-08 18:23:07 - DEBUG :: User frahmani accessed dashboard
+2025-03-08 18:23:07 - DEBUG :: Calculating disk usage for user frahmani
+2025-03-08 18:23:39 - DEBUG :: User frahmani accessed dashboard
+2025-03-08 18:23:39 - DEBUG :: Using cached disk usage for user frahmani
+2025-03-08 18:24:17 - DEBUG :: User amin accessed dashboard
+2025-03-08 18:24:17 - DEBUG :: Calculating disk usage for user amin
+2025-03-08 18:24:47 - DEBUG :: User frahmani accessed dashboard
+2025-03-08 18:24:47 - DEBUG :: Using cached disk usage for user frahmani
+2025-03-08 18:27:19 - DEBUG :: Clearing disk usage cache
+2025-03-08 18:32:19 - DEBUG :: Clearing disk usage cache
+2025-03-08 18:37:19 - DEBUG :: Clearing disk usage cache

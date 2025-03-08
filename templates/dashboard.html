@@ -68,4 +68,42 @@
 {% else %}
 <p>You currently have no GPU allocations.</p>
 {% endif %}
+{% if is_admin and all_allocations %}
+<div class="card mt-4">
+  <div class="card-header bg-warning">
+    <h5>Admin: All Active GPU Allocations</h5>
+  </div>
+  <div class="card-body">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>GPU Type</th>
+          <th>GPU ID</th>
+          <th>Allocated At</th>
+          <th>Expires At</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for allocation in all_allocations %}
+        <tr>
+          <td>{{ allocation.username }}</td>
+          <td>{{ allocation.gpu_type }}</td>
+          <td>{{ allocation.gpu_id }}</td>
+          <td>{{ allocation.allocated_at }}</td>
+          <td>{{ allocation.expiration_time }}</td>
+          <td>
+            <form action="{{ url_for('release_gpu') }}" method="post">
+                <input type="hidden" name="allocation_id" value="{{ allocation._id }}">
+                <button type="submit" class="btn btn-danger btn-sm">Release GPU</button>
+              </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

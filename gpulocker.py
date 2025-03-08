@@ -236,12 +236,24 @@ def dashboard():
                 'released_at': None
             }))
             
+            # For admin user "amin", get all active allocations
+            all_allocations = []
+            authorized_users = config('PRIVILEGED_USERS', cast=Csv())
+            is_admin=False
+            if username in authorized_users:
+                is_admin=True
+                all_allocations = list(db.gpu_allocations.find({
+                    'released_at': None
+                }))
+                all_allocations = format_allocations_for_display(all_allocations)
+            
             # Format dates for display
             allocations = format_allocations_for_display(allocations)
             
     except Exception as e:
         logger.error(f"Error fetching allocations: {str(e)}")
         allocations = []
+        all_allocations = []
     
     # Get user's disk usage
     used_bytes, used_by_others_bytes, total_bytes = get_user_disk_usage(username)
@@ -258,6 +270,8 @@ def dashboard():
     return render_template('dashboard.html', 
                           gpu_dict=AVAILABLE_GPUs, 
                           allocations=allocations,
+                          all_allocations=all_allocations,
+                          is_admin=is_admin,
                           disk_usage=disk_usage)
 
 def allocate_gpu(username, gpu_type, gpu_id, days):
@@ -364,6 +378,7 @@ def lock_gpu():
                                     'gpu_id': gpu_id,
                                     'allocation_id': result
                                 })
+                                allocated_gpus[gpu_type].append(gpu_id)
                             else:
                                 # Allocation failed, raise exception to trigger rollback
                                 raise Exception(f"Failed to allocate GPU {gpu_id}: {result}")
@@ -602,16 +617,22 @@ def check_if_available(requested_gpu_dict):
 def release_gpu():
     username = session['username']
     allocation_id = request.form.get('allocation_id')
+    authorized_users = config('PRIVILEGED_USERS', cast=Csv())
+    if username in authorized_users:
+        is_admin=True 
+    else:
+        is_admin=False
     
     try:
         client, db = get_db_connection()
         
-        # Find the allocation and verify ownership
-        allocation = db.gpu_allocations.find_one({
-            '_id': ObjectId(allocation_id),
-            'username': username,
-            'released_at': None
-        })
+        # Find the allocation - if admin, don't check username
+        query = {'_id': ObjectId(allocation_id), 'released_at': None}
+        if not is_admin:
+            # Regular users can only release their own GPUs
+            query['username'] = username
+            
+        allocation = db.gpu_allocations.find_one(query)
         
         if not allocation:
             flash('Invalid GPU allocation or unauthorized access', 'error')
@@ -619,10 +640,15 @@ def release_gpu():
         
         gpu_type = allocation['gpu_type']
         gpu_id = allocation['gpu_id']
+        user_username = allocation['username']  # The actual owner of the GPU
         
         # Use the common unallocate function
-        if unallocate_gpu(username, gpu_id, gpu_type, allocation_id, db):
-            flash(f'Successfully released GPU {gpu_id}', 'success')
+        if unallocate_gpu(user_username, gpu_id, gpu_type, allocation_id, db):
+            if is_admin and username != user_username:
+                flash(f'Successfully released GPU {gpu_id} from user {user_username}', 'success')
+                logger.info(f"Admin {username} released GPU {gpu_id} from user {user_username}")
+            else:
+                flash(f'Successfully released GPU {gpu_id}', 'success')
         else:
             flash('Failed to release GPU', 'error')
                 
@@ -729,6 +755,37 @@ def unallocate_gpu(username, gpu_id, gpu_type, allocation_id, db):
     """
     try:
         logger.debug(f"Releasing GPU {gpu_id} ({gpu_type}) from user {username}")
+        
+        # First, terminate any processes the user has running on this GPU
+        try:
+            # Get all processes running on this GPU
+            nvidia_smi = subprocess.run(
+                ['sudo', 'nvidia-smi', '--id=' + str(gpu_id), '--query-compute-apps=pid', '--format=csv,noheader'],
+                capture_output=True, text=True, check=True
+            )
+            
+            # For each process, check if it belongs to the user and kill it if so
+            for line in nvidia_smi.stdout.strip().split('\n'):
+                if not line.strip():
+                    continue
+                
+                pid = line.strip()
+                try:
+                    process_owner = subprocess.run(
+                        ['ps', '-o', 'user=', '-p', pid],
+                        capture_output=True, text=True, check=True
+                    ).stdout.strip()
+                    
+                    if process_owner == username:
+                        logger.info(f"Terminating process {pid} owned by {username} on GPU {gpu_id}")
+                        subprocess.run(['sudo', 'kill', '-9', pid], check=True)
+                except subprocess.CalledProcessError:
+                    continue
+            
+            logger.debug(f"Terminated all processes for user {username} on GPU {gpu_id}")
+        except Exception as e:
+            logger.error(f"Error terminating processes on GPU {gpu_id}: {str(e)}")
+            # Continue with release even if process termination fails
         
         with GPU_LOCK:
             # Step 1: Add GPU back to available pool
@@ -844,9 +901,9 @@ def clear_disk_usage_cache():
 @login_required
 def reset_all():
     username = session['username']
-    
+    authorized_users = config('PRIVILEGED_USERS', cast=Csv())
     # Check if the user is admin
-    if username != 'amin':
+    if username not in authorized_users:
         logger.warning(f"Unauthorized reset attempt by user {username}")
         flash('You are not authorized to perform this action', 'error')
         return redirect(url_for('dashboard'))
@@ -912,7 +969,7 @@ if __name__ == '__main__':
                 logger.error("Error while resetting permissions ... exiting")
                 mongo_client.close()  # Close MongoDB connection
                 exit(1)
-        sched_module.every(config('USER_PENALTY',default=6,cast=int)).hours.do(check_expired_reservations)
+        sched_module.every(config('CHECK_FOR_IDLE_GPU',default=6,cast=int)).hours.do(check_expired_reservations)
         # Add scheduled task to clear disk usage cache
         sched_module.every(DISK_CACHE_TIMEOUT).seconds.do(clear_disk_usage_cache)
         thread = threading.Thread(target=threaded_function)
