@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule{% endblock %}
+
+{% block content %}
+<h1>GPU Schedule</h1>
+{% if allocations %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>GPU Type</th>
+                <th>GPU ID</th>
+                <th>Allocated At</th>
+                <th>Expires At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for allocation in allocations %}
+            <tr>
+                <td>{{ allocation.username }}</td>
+                <td>{{ allocation.gpu_type }}</td>
+                <td>{{ allocation.gpu_id }}</td>
+                <td>{{ allocation.allocated_at }}</td>
+                <td>{{ allocation.expiration_time }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No active GPU allocations found.</p>
+{% endif %}
+{% endblock %} 

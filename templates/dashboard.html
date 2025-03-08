@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1>GPU Dashboard</h1>
+<div class="disk-usage-container">
+    <h3>Disk Usage</h3>
+    <div class="progress">
+      <div class="progress-bar" role="progressbar" style="width: {{ disk_usage.percent_used }}%;" aria-valuenow="{{ disk_usage.percent_used }}" aria-valuemin="0" aria-valuemax="100">{{ disk_usage.percent_used }}%</div>
+      <div class="progress-bar progress-bar-yellow" role="progressbar" style="width: {{ disk_usage.percent_others }}%;" aria-valuenow="{{ disk_usage.percent_others }}" aria-valuemin="0" aria-valuemax="100">{{ disk_usage.percent_others }}%</div>
+    </div>
+    <p>Your usage: {{ disk_usage.used }} ({{ disk_usage.percent_used }}%)</p>
+    <p>Used by others: {{ disk_usage.used_by_others }} ({{ disk_usage.percent_others }}%)</p>
+    <p>Free space: {{ disk_usage.free }} ({{ disk_usage.percent_free }}%)</p>
+    <p>Total capacity: {{ disk_usage.total }}</p>
+</div>
+<h2>Available GPUs:</h2>
+<form method="POST" action="{{ url_for('lock_gpu') }}">
+    {% for gpu_type, gpu_ids in gpu_dict.items() %}
+    <div class="gpu-row">
+        <div class="gpu-info">
+            <label>{{ gpu_type }}</label>
+            <span>({{ gpu_ids|length }} available) - count : </span>
+
+            <select name="quantity_{{ gpu_type }}">
+                {% for i in range(gpu_ids|length + 1) %}
+                    <option value="{{ i }}">{{ i }}</option>
+                {% endfor %}
+            </select>
+            <label>days:</label>
+            <input type="number" name="days_{{ gpu_type }}" min="0" max="7" value="1">
+        </div>
+    </div>
+    {% endfor %}
+    <input type="submit" value="Lock GPUs">
+</form>
+
+<h2>Your Current GPU Allocations</h2>
+{% if allocations %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>GPU Type</th>
+            <th>GPU ID</th>
+            <th>Allocated At</th>
+            <th>Expires At</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for allocation in allocations %}
+        <tr>
+            <td>{{ allocation.gpu_type }}</td>
+            <td>{{ allocation.gpu_id }}</td>
+            <td>{{ allocation.allocated_at }}</td>
+            <td>{{ allocation.expiration_time }}</td>
+            <td>
+                <form action="{{ url_for('release_gpu') }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="allocation_id" value="{{ allocation._id }}">
+                    <button type="submit" class="btn btn-danger">Release GPU</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>You currently have no GPU allocations.</p>
+{% endif %}
+{% endblock %}
