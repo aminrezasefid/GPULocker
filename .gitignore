@@ -2,3 +2,4 @@
 /gpulocker.ipynb
 gpulock.log
 .env
+gpu_allocations.db
