@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Notifications{% endblock %}
+
+{% block content %}
+<h1>Send Notifications</h1>
+
+<div class="admin-notification-container">
+    <form method="post" action="{{ url_for('notification.send_notification') }}">
+        <div class="form-group">
+            <label for="recipient">Recipient:</label>
+            <select name="recipient" id="recipient" class="form-control">
+                <option value="all">All Users</option>
+                {% for user in users %}
+                <option value="{{ user }}">{{ user }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="message">Message:</label>
+            <textarea name="message" id="message" rows="4" class="form-control" required></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Send Notification</button>
+    </form>
+    
+    <h2>Recent Notifications</h2>
+    {% if all_notifications %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Recipient</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for notification in all_notifications %}
+                <tr>
+                    <td>{{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ notification.username }}</td>
+                    <td class="message-cell">
+                        {% if notification.message|length > 100 %}
+                            <div class="message-container">
+                                <div class="message-preview" id="admin-preview-{{ notification._id }}">
+                                    {{ notification.message[:100] }}...
+                                </div>
+                                <div class="message-full" id="admin-full-{{ notification._id }}" style="display: none;">
+                                    {{ notification.message }}
+                                </div>
+                                <button class="btn btn-sm btn-secondary toggle-admin-message" 
+                                        data-notification-id="{{ notification._id }}"
+                                        onclick="toggleAdminMessage('{{ notification._id }}')">
+                                    Show More
+                                </button>
+                            </div>
+                        {% else %}
+                            {{ notification.message }}
+                        {% endif %}
+                    </td>
+                    <td>{{ "Read" if notification.read else "Unread" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No notifications have been sent.</p>
+    {% endif %}
+</div>
+
+<script>
+    function toggleAdminMessage(notificationId) {
+        const previewElement = document.getElementById(`admin-preview-${notificationId}`);
+        const fullElement = document.getElementById(`admin-full-${notificationId}`);
+        const button = document.querySelector(`.toggle-admin-message[data-notification-id="${notificationId}"]`);
+        
+        if (previewElement.style.display !== 'none') {
+            previewElement.style.display = 'none';
+            fullElement.style.display = 'block';
+            button.textContent = 'Show Less';
+        } else {
+            previewElement.style.display = 'block';
+            fullElement.style.display = 'none';
+            button.textContent = 'Show More';
+        }
+    }
+</script>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .admin-notification-container {
+        margin-top: 20px;
+    }
+    .form-control {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    textarea.form-control {
+        resize: vertical;
+    }
+    .message-cell {
+        max-width: 300px;
+        width: 40%;
+        text-align: left;
+        word-wrap: break-word;
+        white-space: normal;
+    }
+    .message-container {
+        position: relative;
+        width: 100%;
+    }
+    .message-preview, .message-full {
+        margin-bottom: 10px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        width: 100%;
+        text-align: left;
+    }
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        border-radius: 0.2rem;
+    }
+    .toggle-admin-message {
+        margin-top: 5px;
+    }
+    table {
+        table-layout: fixed;
+        width: 100%;
+    }
+</style>
+{% endblock %} 

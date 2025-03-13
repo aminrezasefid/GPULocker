@@ -1,5 +1,10 @@
 /gpul
+__pycache__
 /gpulocker.ipynb
 gpulock.log
 .env
 gpu_allocations.db
+debug.log
+cert.pem
+key.pem
+gunicorn.log

@@ -156,6 +156,15 @@
             border-radius: 6px;
             border: 1px solid #dee2e6;
         }
+        .notification-badge {
+            display: inline-block;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -163,9 +172,20 @@
     {% if session.username %}
     <nav class="nav">
         <ul class="nav-links">
-            <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-            <li><a href="{{ url_for('schedule') }}">Schedule</a></li>
-            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+            <li><a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a></li>
+            <li><a href="{{ url_for('dashboard.schedule') }}">Schedule</a></li>
+            <li>
+                <a href="{{ url_for('notification.notifications') }}">
+                    Notifications
+                    {% if unread_notifications_count > 0 %}
+                    <span class="notification-badge">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            {% if session.is_admin %}
+            <li><a href="{{ url_for('notification.admin_notifications') }}">Admin</a></li>
+            {% endif %}
+            <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
         </ul>
     </nav>
     {% endif %}
