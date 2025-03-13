@@ -96,13 +96,13 @@ python gpulocker.py
 - `GPU_UTILIZATION_HISTORY_DAYS`: Days to keep GPU utilization history
 - `GPU_ACTIVITY_CHECK_MINUTES`: Minutes between GPU activity checks
 - `REVOKE_IDLE_GPU_AFTER_HOURS`: Hours after which to revoke idle GPU allocations
-- `FORCE_REVOKE`: When set to True, forcibly revokes GPU access without waiting for idle period (default: False)
+- `FORCE_REVOKE`: When set to `True`, forcibly revokes GPU access regardless of any active process on the GPU. (default: False)
 - `REDIS_HOST`: Redis server hostname
 - `REDIS_PORT`: Redis server port
 - `REDIS_DB`: Redis database number
 - `PROXY_URL`: HTTP proxy URL (if needed)
 - `TELEGRAM_BOT_TOKEN`: Token for Telegram bot notifications
-- `TELEGRAM_CHAT_ID`: Telegram chat ID for notifications
+- `TELEGRAM_CHAT_ID`: Telegram chat ID for notifications (admin user for now)
 
 ## Usage
 
