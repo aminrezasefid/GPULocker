@@ -58,14 +58,14 @@ def process_scheduler_job_queue():
                     id = job_input.get('_id')
                     
                     if job_unit == 'hours':
-                        job = sched_module.every(job_interval).hours.do(globals()[job_function], job_input)
+                        job = sched_module.every(job_interval).hours.do(globals()[job_function], job_input).tag(f"{id}:{job_function}")
                     elif job_unit == 'minutes':
-                        job = sched_module.every(job_interval).minutes.do(globals()[job_function], job_input)
+                        job = sched_module.every(job_interval).minutes.do(globals()[job_function], job_input).tag(f"{id}:{job_function}")
                     elif job_unit == 'seconds':
-                        job = sched_module.every(job_interval).seconds.do(globals()[job_function], job_input)
+                        job = sched_module.every(job_interval).seconds.do(globals()[job_function], job_input).tag(f"{id}:{job_function}")
                     
                     logger.info(f"Added interval job: {job_function} every {job_interval} {job_unit}")
-                    REDIS_BINARY.rpush(f"scheduled_job:{id}:{job_function}", pickle.dumps(job))
+                    #REDIS_BINARY.rpush(f"scheduled_job:{id}:{job_function}", pickle.dumps(job))
                 else:
                     logger.error(f"Job input missing _id field: {job_input}")
             except Exception as e:
@@ -94,13 +94,10 @@ def process_scheduler_cancel_job_queue():
                 cancelled = False
                 
                 # Get job from Redis
-                job_data = REDIS_BINARY.rpop(f"scheduled_job:{id}:{job_function}")
-                if job_data:
-                    job = pickle.loads(job_data)
-                    # Cancel the job
-                    sched_module.cancel_job(job)
-                    cancelled = True
-                    logger.info(f"Cancelled scheduled job: {job_function} with id {id}")
+                #job_data = REDIS_BINARY.rpop(f"scheduled_job:{id}:{job_function}")
+                sched_module.clear(f"{id}:{job_function}")
+                cancelled = True
+                logger.info(f"Cancelled scheduled job: {job_function} with id {id}")
                 
                 if not cancelled:
                     logger.warning(f"No matching job found to cancel: {job_function} with id {id}")
