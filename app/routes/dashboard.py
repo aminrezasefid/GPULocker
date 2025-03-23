@@ -472,15 +472,27 @@ def lock_gpu():
         flash("An unexpected error occurred", "error")
         return redirect(url_for('dashboard.dashboard'))
 def format_allocations_for_display(allocations):
-    """Format allocation dates for display using jdatetime"""
+    """Format allocation dates for display using jdatetime or regular datetime based on config"""
+    # Get configuration for date format from .env
+    use_jalali = config('USE_JALALI_DATES', default=True, cast=bool)
+    
     for allocation in allocations:
-        allocation['allocated_at_str'] = jdatetime.datetime.fromgregorian(
-            datetime=allocation['allocated_at']).strftime('%Y-%m-%d %H:%M:%S')
-        allocation['expiration_time_str'] = jdatetime.datetime.fromgregorian(
-            datetime=allocation['expiration_time']).strftime('%Y-%m-%d %H:%M:%S')
-        if allocation.get('released_at'):
-            allocation['released_at_str'] = jdatetime.datetime.fromgregorian(
-                datetime=allocation['released_at']).strftime('%Y-%m-%d %H:%M:%S')
+        if use_jalali:
+            # Use jdatetime (Jalali/Persian calendar)
+            allocation['allocated_at_str'] = jdatetime.datetime.fromgregorian(
+                datetime=allocation['allocated_at']).strftime('%Y-%m-%d %H:%M:%S')
+            allocation['expiration_time_str'] = jdatetime.datetime.fromgregorian(
+                datetime=allocation['expiration_time']).strftime('%Y-%m-%d %H:%M:%S')
+            if allocation.get('released_at'):
+                allocation['released_at_str'] = jdatetime.datetime.fromgregorian(
+                    datetime=allocation['released_at']).strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            # Use regular datetime (Gregorian calendar)
+            allocation['allocated_at_str'] = allocation['allocated_at'].strftime('%Y-%m-%d %H:%M:%S')
+            allocation['expiration_time_str'] = allocation['expiration_time'].strftime('%Y-%m-%d %H:%M:%S')
+            if allocation.get('released_at'):
+                allocation['released_at_str'] = allocation['released_at'].strftime('%Y-%m-%d %H:%M:%S')
+                
         if allocation.get('comment'):
             allocation['comment_str'] = allocation['comment']
         else:
