@@ -65,6 +65,7 @@ REDIS_DB=0
 PROXY_URL="http://username:password@proxy.example.com:port"
 TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
 TELEGRAM_CHAT_ID="your_telegram_chat_id"
+USE_JALALI_DATES=True
 ```
 
 4. Ensure MongoDB and Redis are running:
@@ -103,7 +104,7 @@ python gpulocker.py
 - `PROXY_URL`: HTTP proxy URL (if needed)
 - `TELEGRAM_BOT_TOKEN`: Token for Telegram bot notifications
 - `TELEGRAM_CHAT_ID`: Telegram chat ID for notifications (admin user for now)
-
+- `USE_JALALI_DATES`: Controls date format display throughout the application. When set to True (default), dates are converted to Jalali/Persian calendar format for display in tables and user interfaces. When set to False, dates remain in standard Gregorian format. 
 ## Usage
 
 1. Access the web interface at `http://your-server:5151`
