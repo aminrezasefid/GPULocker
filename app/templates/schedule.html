@@ -71,8 +71,8 @@
                 <td>{{ allocation.username }}</td>
                 <td>{{ allocation.gpu_type }}</td>
                 <td>{{ allocation.gpu_id }}</td>
-                <td>{{ allocation.allocated_at }}</td>
-                <td>{{ allocation.expiration_time }}</td>
+                <td>{{ allocation.allocated_at_str }}</td>
+                <td>{{ allocation.expiration_time_str }}</td>
             </tr>
             {% endfor %}
         </tbody>
