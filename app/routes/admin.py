@@ -44,8 +44,9 @@ def reset_all():
             # Remove user's access to the GPU
             set_gpu_permission(alloc_username, gpu_id, grant=False)
             
-            # Mark allocation as released in database
-            update_allocation_status(db, allocation_id, released=True)
+            # Mark allocation as released in database with a comment
+            comment = f"Released during system reset by admin {username}"
+            update_allocation_status(db, allocation_id, released=True, comment=comment)
             
             logger.debug(f"Revoked access to GPU {gpu_id} for user {alloc_username}")
         

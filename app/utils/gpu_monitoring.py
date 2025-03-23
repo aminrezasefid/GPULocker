@@ -335,7 +335,7 @@ def check_expired_reservations():
                 logger.info(f"User {username} is not using allocated GPU {gpu_id}. Releasing allocation {allocation_id}.")
                 
                 # Use the common unallocate function
-                unallocate_gpu(username, gpu_id, gpu_type, allocation_id, db)
+                unallocate_gpu(username, gpu_id, gpu_type, allocation_id, db, comment=f"Released due to expiration")
             else:
                 logger.debug(f"User {username} is actively using GPU {gpu_id}, skipping release")
         
@@ -439,7 +439,7 @@ def restore_monitoring_jobs():
 
 
 
-def unallocate_gpu(username, gpu_id, gpu_type, allocation_id, db):
+def unallocate_gpu(username, gpu_id, gpu_type, allocation_id, db, comment=None):
     """Release a GPU allocation with proper cleanup of permissions and database
     
     Args:
@@ -514,7 +514,7 @@ def unallocate_gpu(username, gpu_id, gpu_type, allocation_id, db):
                 
                 try:
                     # Step 2: Mark allocation as released in database
-                    if update_allocation_status(db, allocation_id, released=True):
+                    if update_allocation_status(db, allocation_id, released=True, comment=comment):
                         logger.debug(f"Updated allocation {allocation_id} status to released")
                         
                         try:
@@ -849,7 +849,7 @@ def check_and_revoke_idle_allocation(allocation):
                 # Revoke the allocation
                 if not is_user_using_gpu(username, gpu_id) or config('FORCE_REVOKE', default=False, cast=bool):
                     logger.info(f"GPU {gpu_id} is not being used by {username}, skipping idle check")
-                    if unallocate_gpu(username, gpu_id, gpu_type, allocation_id, db):
+                    if unallocate_gpu(username, gpu_id, gpu_type, allocation_id, db, comment=f"Released due to idle"):
                         logger.info(f"Successfully revoked idle allocation {allocation_id} for GPU {gpu_id} from user {username}")
                         return True
                     else:

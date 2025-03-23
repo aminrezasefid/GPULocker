@@ -65,7 +65,6 @@ def process_scheduler_job_queue():
                         job = sched_module.every(job_interval).seconds.do(globals()[job_function], job_input).tag(f"{id}:{job_function}")
                     
                     logger.info(f"Added interval job: {job_function} every {job_interval} {job_unit}")
-                    #REDIS_BINARY.rpush(f"scheduled_job:{id}:{job_function}", pickle.dumps(job))
                 else:
                     logger.error(f"Job input missing _id field: {job_input}")
             except Exception as e:
@@ -92,9 +91,6 @@ def process_scheduler_cancel_job_queue():
                 
                 # Initialize cancelled flag
                 cancelled = False
-                
-                # Get job from Redis
-                #job_data = REDIS_BINARY.rpop(f"scheduled_job:{id}:{job_function}")
                 sched_module.clear(f"{id}:{job_function}")
                 cancelled = True
                 logger.info(f"Cancelled scheduled job: {job_function} with id {id}")

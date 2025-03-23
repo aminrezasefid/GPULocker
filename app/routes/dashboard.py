@@ -1,4 +1,4 @@
-from flask import Blueprint,render_template, request, session, redirect, url_for, flash
+from flask import Blueprint,render_template,Response, request, session, redirect, url_for, flash
 from decouple import config,Csv
 from app.utils.logger import logger
 import jdatetime
@@ -10,6 +10,7 @@ from app.config import REDIS_CLIENT,REDIS_KEYS,DISK_CACHE_TIMEOUT
 from app.utils.disk import get_disk_cache,get_user_disk_usage,set_disk_cache
 from app.routes.auth import login_required
 import json
+from datetime import datetime
 
 from app.utils.gpu_monitoring import get_available_gpus
 from app.utils.notification import get_unread_notifications_count
@@ -51,32 +52,103 @@ def schedule():
                           refresh_rate_ms=refresh_rate_ms,
                           unread_notifications_count=unread_count)
 
+def tail(file, n):
+    import os
+    with open(file, 'rb') as f:
+        f.seek(0, os.SEEK_END)
+        buffer = bytearray()
+        pointer = f.tell()
+        while pointer >= 0 and n > 0:
+            f.seek(pointer)
+            pointer -= 1
+            new_byte = f.read(1)
+            if new_byte == b'\n':
+                n -= 1
+            buffer.extend(new_byte)
+        return buffer[::-1].decode('utf-8')
+
+@dashboard_bp.route('/logs')
+@login_required
+def get_logs():
+    LOG_FILE_PATH="/home/amin/GPULocker/gpulock.log"
+    try:
+        lines = int(request.args.get('lines', 200))  # Default to 200 lines
+        lines = max(1, min(300, lines))  # Limit between 1 and 300
+        logs = tail(LOG_FILE_PATH, lines)
+        return Response(logs, mimetype='text/plain')
+    except Exception as e:
+        return f"Error reading log file: {str(e)}", 500
+
+
 @dashboard_bp.route('/dashboard')
 @login_required
 def dashboard():
     username = session["username"]
     
+    # Get page parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Number of items per page
+    
     try:
         with MongoDBConnection() as (client, db):
-            # Query for active allocations (where released_at is None)
-            allocations = list(db.gpu_allocations.find({
+            # Query for user's active allocations first
+            active_allocations = list(db.gpu_allocations.find({
                 'username': username,
                 'released_at': None
-            }))
+            }).sort('expiration_time', pymongo.DESCENDING))
             
-            # For admin users, get all active allocations
-            all_allocations = []
-            authorized_users = config('PRIVILEGED_USERS', cast=Csv())
-            is_admin = username in authorized_users
+            # Query for user's allocation history
+            history_allocations = list(db.gpu_allocations.find({
+                'username': username,
+                'released_at': {'$ne': None}
+            }).sort('released_at', pymongo.DESCENDING))
             
-            if is_admin:
-                all_allocations = list(db.gpu_allocations.find({
-                    'released_at': None
-                }))
-                all_allocations = format_allocations_for_display(all_allocations)
+            # Combine active and history allocations
+            allocations = active_allocations + history_allocations
+            
+            # Calculate pagination
+            total_allocations = len(allocations)
+            total_pages = max(1, (total_allocations + per_page - 1) // per_page)
+            page = min(page, total_pages)  # Ensure page is within bounds
+            
+            # Slice the allocations for current page
+            start_idx = (page - 1) * per_page
+            end_idx = start_idx + per_page
+            current_allocations = allocations[start_idx:end_idx] if allocations else []
             
             # Format dates for display
-            allocations = format_allocations_for_display(allocations)
+            current_allocations = format_allocations_for_display(current_allocations)
+            
+            # For admin users, get all allocations with pagination
+            all_allocations = []
+            admin_page = request.args.get('admin_page', 1, type=int)
+            authorized_users = config('PRIVILEGED_USERS', cast=Csv())
+            is_admin = username in authorized_users
+            total_admin_pages = 1  # Default value
+            
+            if is_admin:
+                # Get active allocations first
+                admin_active = list(db.gpu_allocations.find({
+                    'released_at': None
+                }).sort('expiration_time', pymongo.DESCENDING))
+                
+                # Get allocation history
+                admin_history = list(db.gpu_allocations.find({
+                    'released_at': {'$ne': None}
+                }).sort('released_at', pymongo.DESCENDING))
+                
+                all_allocations = admin_active + admin_history
+                
+                # Calculate admin pagination
+                total_admin_allocations = len(all_allocations)
+                total_admin_pages = max(1, (total_admin_allocations + per_page - 1) // per_page)
+                admin_page = min(admin_page, total_admin_pages)  # Ensure admin_page is within bounds
+                
+                # Slice admin allocations for current page
+                admin_start = (admin_page - 1) * per_page
+                admin_end = admin_start + per_page
+                all_allocations = all_allocations[admin_start:admin_end] if all_allocations else []
+                all_allocations = format_allocations_for_display(all_allocations)
             
             # Get available GPUs from Redis
             available_gpus = get_available_gpus()
@@ -113,12 +185,17 @@ def dashboard():
             
             return render_template('dashboard.html',
                                 gpu_dict=available_gpus,
-                                allocations=allocations,
+                                allocations=current_allocations,
                                 all_allocations=all_allocations,
                                 is_admin=is_admin,
+                                page=page,
+                                total_pages=total_pages,
+                                admin_page=admin_page,
+                                total_admin_pages=total_admin_pages,
                                 disk_usage=disk_usage_data,
                                 unread_notifications_count=unread_count,
-                                gpu_status=gpu_status)
+                                gpu_status=gpu_status,
+                                now=datetime.now())
             
     except Exception as e:
         logger.error(f"Error in dashboard route: {str(e)}")
@@ -155,8 +232,13 @@ def release_gpu():
         gpu_id = allocation['gpu_id']
         user_username = allocation['username']  # The actual owner of the GPU
         
-        # Use the common unallocate function
-        if unallocate_gpu(user_username, gpu_id, gpu_type, allocation_id, db):
+        # Add a comment based on who is releasing the GPU
+        comment = f"Manually released by {username}"
+        if is_admin and username != user_username:
+            comment = f"Released by admin :{username}"
+        
+        # Use the common unallocate function with the comment
+        if unallocate_gpu(user_username, gpu_id, gpu_type, allocation_id, db, comment=comment):
             if is_admin and username != user_username:
                 flash(f'Successfully released GPU {gpu_id} from user {user_username}', 'success')
                 logger.info(f"Admin {username} released GPU {gpu_id} from user {user_username}")
@@ -173,6 +255,79 @@ def release_gpu():
             client.close()
     
     return redirect(url_for('dashboard.dashboard'))
+
+@dashboard_bp.route('/extend_gpu', methods=['POST'])
+@login_required
+def extend_gpu():
+    username = session['username']
+    allocation_id = request.form.get('allocation_id')
+    extension_days = request.form.get('extension_days')
+    
+    # Validate input
+    if not allocation_id or not extension_days:
+        flash('Invalid request parameters', 'error')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    try:
+        extension_days = int(extension_days)
+        if extension_days < 1 or extension_days > 7:
+            flash('Extension days must be between 1 and 7', 'error')
+            return redirect(url_for('dashboard.dashboard'))
+    except ValueError:
+        flash('Invalid extension days value', 'error')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Check admin status from session
+    is_admin = session.get('is_admin', False)
+    
+    try:
+        with MongoDBConnection() as (client, db):
+            # Find the allocation - if admin, don't check username
+            query = {'_id': ObjectId(allocation_id), 'released_at': None}
+            if not is_admin:
+                # Regular users can only extend their own GPUs
+                query['username'] = username
+                
+            allocation = db.gpu_allocations.find_one(query)
+            
+            if not allocation:
+                flash('Invalid GPU allocation or unauthorized access', 'error')
+                return redirect(url_for('dashboard.dashboard'))
+            
+            # Calculate new expiration time
+            from datetime import timedelta
+            current_expiration = allocation['expiration_time']
+            new_expiration = current_expiration + timedelta(days=extension_days)
+            if datetime.now() < current_expiration:
+                flash('GPU is not expired yet', 'error')
+                logger.warning(f"User {username} tried to extend GPU {allocation['gpu_id']} but it is not expired yet")
+                return redirect(url_for('dashboard.dashboard'))
+            # Update the allocation
+            result = db.gpu_allocations.update_one(
+                {'_id': ObjectId(allocation_id)},
+                {'$set': {'expiration_time': new_expiration}}
+            )
+            
+            if result.modified_count > 0:
+                gpu_id = allocation['gpu_id']
+                gpu_type = allocation['gpu_type']
+                user_username = allocation['username']
+                
+                if is_admin and username != user_username:
+                    flash(f'Successfully extended GPU {gpu_id} for user {user_username} by {extension_days} days', 'success')
+                    logger.info(f"Admin {username} extended GPU {gpu_id} for user {user_username} by {extension_days} days")
+                else:
+                    flash(f'Successfully extended GPU {gpu_id} by {extension_days} days', 'success')
+                    logger.info(f"User {username} extended GPU {gpu_id} by {extension_days} days")
+            else:
+                flash('Failed to extend GPU allocation', 'error')
+                
+    except Exception as e:
+        logger.error(f"Error in extend_gpu route: {str(e)}")
+        flash('Failed to extend GPU allocation', 'error')
+    
+    return redirect(url_for('dashboard.dashboard'))
+
 @dashboard_bp.route('/lock_gpu', methods=['POST'])
 @login_required
 def lock_gpu():
@@ -317,17 +472,19 @@ def lock_gpu():
         flash("An unexpected error occurred", "error")
         return redirect(url_for('dashboard.dashboard'))
 def format_allocations_for_display(allocations):
-    """Format allocation dates for display using jdatetime
-    Args:
-        allocations: List of allocation documents from MongoDB
-    Returns:
-        List of formatted allocation documents
-    """
+    """Format allocation dates for display using jdatetime"""
     for allocation in allocations:
-        allocation['allocated_at'] = jdatetime.datetime.fromgregorian(
+        allocation['allocated_at_str'] = jdatetime.datetime.fromgregorian(
             datetime=allocation['allocated_at']).strftime('%Y-%m-%d %H:%M:%S')
-        allocation['expiration_time'] = jdatetime.datetime.fromgregorian(
+        allocation['expiration_time_str'] = jdatetime.datetime.fromgregorian(
             datetime=allocation['expiration_time']).strftime('%Y-%m-%d %H:%M:%S')
+        if allocation.get('released_at'):
+            allocation['released_at_str'] = jdatetime.datetime.fromgregorian(
+                datetime=allocation['released_at']).strftime('%Y-%m-%d %H:%M:%S')
+        if allocation.get('comment'):
+            allocation['comment_str'] = allocation['comment']
+        else:
+            allocation['comment_str'] = '-'    
     return allocations
 
 def format_size(size_bytes):

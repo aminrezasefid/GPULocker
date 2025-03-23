@@ -36,7 +36,7 @@
     <input type="submit" value="Lock GPUs">
 </form>
 
-<h2>Your Current GPU Allocations</h2>
+<h2>Your GPU Allocations</h2>
 {% if allocations %}
 <table class="table">
     <thead>
@@ -45,6 +45,8 @@
             <th>GPU ID</th>
             <th>Allocated At</th>
             <th>Expires At</th>
+            <th>Status</th>
+            <th>Comment</th>
             <th>Action</th>
         </tr>
     </thead>
@@ -53,57 +55,187 @@
         <tr>
             <td>{{ allocation.gpu_type }}</td>
             <td>{{ allocation.gpu_id }}</td>
-            <td>{{ allocation.allocated_at }}</td>
-            <td>{{ allocation.expiration_time }}</td>
+            <td>{{ allocation.allocated_at_str }}</td>
+            <td>{{ allocation.expiration_time_str }}</td>
             <td>
-                <form action="{{ url_for('dashboard.release_gpu') }}" method="POST" style="display: inline;">
-                    <input type="hidden" name="allocation_id" value="{{ allocation._id }}">
-                    <button type="submit" class="btn btn-danger">Release GPU</button>
-                </form>
+                {% if allocation.released_at %}
+                    Released on <br>{{ allocation.released_at_str }}
+                {% else %}
+                    Active
+                {% endif %}
+            </td>
+            <td>{{ allocation.comment_str }}</td>
+            <td>
+                {% if not allocation.released_at %}
+                    <div class="btn-group" role="group">
+                        <form action="{{ url_for('dashboard.release_gpu') }}" method="POST" style="display: inline;">
+                            <input type="hidden" name="allocation_id" value="{{ allocation._id }}">
+                            <button type="submit" class="btn btn-danger">Release GPU</button>
+                        </form>
+                        
+                        {% if allocation.expiration_time < now %}
+                        <form action="{{ url_for('dashboard.extend_gpu') }}" method="POST" style="display: inline; margin-left: 5px;">
+                            <input type="hidden" name="allocation_id" value="{{ allocation._id }}">
+                            <div class="input-group input-group-sm">
+                                <select name="extension_days" class="form-control form-control-sm">
+                                    {% for i in range(1, 8) %}
+                                        <option value="{{ i }}">{{ i }} day{% if i > 1 %}s{% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="input-group-append">
+                                    <button type="submit" class="btn btn-primary btn-sm">Extend</button>
+                                </div>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
+                {% endif %}
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-{% else %}
-<p>You currently have no GPU allocations.</p>
-{% endif %}
-{% if is_admin and all_allocations %}
-<div class="card mt-4">
-  <div class="card-header bg-warning">
-    <h5>Admin: All Active GPU Allocations</h5>
-  </div>
-  <div class="card-body">
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>Username</th>
-          <th>GPU Type</th>
-          <th>GPU ID</th>
-          <th>Allocated At</th>
-          <th>Expires At</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for allocation in all_allocations %}
-        <tr>
-          <td>{{ allocation.username }}</td>
-          <td>{{ allocation.gpu_type }}</td>
-          <td>{{ allocation.gpu_id }}</td>
-          <td>{{ allocation.allocated_at }}</td>
-          <td>{{ allocation.expiration_time }}</td>
-          <td>
-            <form action="{{ url_for('dashboard.release_gpu') }}" method="post">
-                <input type="hidden" name="allocation_id" value="{{ allocation._id }}">
-                <button type="submit" class="btn btn-danger btn-sm">Release GPU</button>
-              </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+
+<!-- Pagination for user allocations -->
+<div class="pagination-container">
+    <div class="pagination-info">
+        Showing page {{ page }} of {{ total_pages }}
+    </div>
+    <nav aria-label="User allocations pagination">
+        <ul class="pagination">
+            {% if total_pages > 1 %}
+                {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('dashboard.dashboard', page=1) }}">&laquo;</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('dashboard.dashboard', page=page-1) }}">&lsaquo;</a>
+                    </li>
+                {% endif %}
+
+                {% for p in range(1, total_pages + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('dashboard.dashboard', page=p) }}">{{ p }}</a>
+                    </li>
+                {% endfor %}
+
+                {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('dashboard.dashboard', page=page+1) }}">&rsaquo;</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('dashboard.dashboard', page=total_pages) }}">&raquo;</a>
+                    </li>
+                {% endif %}
+            {% endif %}
+        </ul>
+    </nav>
 </div>
+{% else %}
+    <p>You have no GPU allocations.</p>
 {% endif %}
+
+<!-- Admin section -->
+{% if is_admin and all_allocations %}
+    <div class="card mt-4">
+        <div class="card-header bg-warning">
+            <h5>Admin: All GPU Allocations</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>GPU Type</th>
+                  <th>GPU ID</th>
+                  <th>Allocated At</th>
+                  <th>Expires At</th>
+                  <th>Status</th>
+                  <th>Comment</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for allocation in all_allocations %}
+                <tr>
+                  <td>{{ allocation.username }}</td>
+                  <td>{{ allocation.gpu_type }}</td>
+                  <td>{{ allocation.gpu_id }}</td>
+                  <td>{{ allocation.allocated_at_str }}</td>
+                  <td>{{ allocation.expiration_time_str }}</td>
+                  <td>
+                    {% if allocation.released_at %}
+                        Released on <br>{{ allocation.released_at_str }}
+                    {% else %}
+                        Active
+                    {% endif %}
+                  </td>
+                  <td>{{ allocation.comment_str }}</td>
+                  <td>
+                    {% if not allocation.released_at %}
+                        <div class="btn-group" role="group">
+                          <form action="{{ url_for('dashboard.release_gpu') }}" method="post">
+                            <input type="hidden" name="allocation_id" value="{{ allocation._id }}">
+                            <button type="submit" class="btn btn-danger btn-sm">Release GPU</button>
+                          </form>
+                          <form action="{{ url_for('dashboard.extend_gpu') }}" method="POST" style="display: inline; margin-left: 5px;">
+                            <input type="hidden" name="allocation_id" value="{{ allocation._id }}">
+                            <div class="input-group input-group-sm">
+                              <select name="extension_days" class="form-control form-control-sm">
+                                {% for i in range(1, 8) %}
+                                  <option value="{{ i }}">{{ i }} day{% if i > 1 %}s{% endif %}</option>
+                                {% endfor %}
+                              </select>
+                              <div class="input-group-append">
+                                <button type="submit" class="btn btn-primary btn-sm">Extend</button>
+                              </div>
+                            </div>
+                          </form>
+                        </div>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+          </table>
+        </div>
+    </div>
+    
+    <!-- Admin pagination controls -->
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Showing admin page {{ admin_page }} of {{ total_admin_pages }}
+        </div>
+        <nav aria-label="Admin allocations pagination">
+            <ul class="pagination">
+                {% if total_admin_pages > 1 %}
+                    {% if admin_page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('dashboard.dashboard', admin_page=1, page=page) }}">&laquo;</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('dashboard.dashboard', admin_page=admin_page-1, page=page) }}">&lsaquo;</a>
+                        </li>
+                    {% endif %}
+
+                    {% for p in range(1, total_admin_pages + 1) %}
+                        <li class="page-item {% if p == admin_page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('dashboard.dashboard', admin_page=p, page=page) }}">{{ p }}</a>
+                        </li>
+                    {% endfor %}
+
+                    {% if admin_page < total_admin_pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('dashboard.dashboard', admin_page=admin_page+1, page=page) }}">&rsaquo;</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('dashboard.dashboard', admin_page=total_admin_pages, page=page) }}">&raquo;</a>
+                        </li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+{% endif %}
+
 {% endblock %}

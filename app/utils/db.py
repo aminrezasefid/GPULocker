@@ -57,22 +57,30 @@ def setup_database():
     finally:
         client.close()
 
-def update_allocation_status(db, allocation_id, released=True):
+def update_allocation_status(db, allocation_id, released=True, comment=None):
     """Update the status of a GPU allocation in the database
     Args:
         db: MongoDB database connection
         allocation_id: ID of the allocation to update
         released: True to mark as released, False to mark as active
+        comment: Optional comment explaining the status change
     Returns:
         bool: Success status
     """
     try:
-        release_time = datetime.now() if released else None
+        update_data = {}
+        if released:
+            update_data['released_at'] = datetime.now()
+            if comment:
+                update_data['comment'] = comment
+        else:
+            update_data['released_at'] = None
+            
         db.gpu_allocations.update_one(
             {'_id': ObjectId(allocation_id) if isinstance(allocation_id, str) else allocation_id},
-            {'$set': {'released_at': release_time}}
+            {'$set': update_data}
         )
-        logger.debug(f"Updated allocation {allocation_id} status: released={released}")
+        logger.debug(f"Updated allocation {allocation_id} status: released={released}, comment={comment}")
         return True
     except Exception as e:
         logger.error(f"Failed to update allocation status: {str(e)}")
