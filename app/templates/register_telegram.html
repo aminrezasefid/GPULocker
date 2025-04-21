@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Connect to Telegram{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Connect Your Account to Telegram</h2>
+                </div>
+                <div class="card-body">
+                    <p>To receive notifications via Telegram, you need to connect your account to our Telegram bot.</p>
+                    <p>Follow these steps:</p>
+                    <ol>
+                        <li>Click on the button below to open Telegram and start a chat with our bot</li>
+                        <li>The bot will automatically recognize your account</li>
+                        <li>You'll start receiving notifications about GPU allocations and other important updates</li>
+                    </ol>
+                    
+                    <div class="text-center mt-4">
+                        <a href="{{ telegram_link }}" class="btn btn-primary btn-lg" target="_blank">
+                            <i class="fas fa-paper-plane mr-2"></i> Connect to Telegram Bot
+                        </a>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        <p>After connecting, please refresh this page or continue to <a href="{{ url_for('dashboard.dashboard') }}">dashboard</a>.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

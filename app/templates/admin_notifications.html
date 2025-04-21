@@ -6,7 +6,7 @@
 <h1>Send Notifications</h1>
 
 <div class="admin-notification-container">
-    <form method="post" action="{{ url_for('notification.send_notification') }}">
+    <form method="post" action="{{ url_for('notification.send_notification_route') }}">
         <div class="form-group">
             <label for="recipient">Recipient:</label>
             <select name="recipient" id="recipient" class="form-control">

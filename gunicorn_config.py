@@ -4,6 +4,7 @@ import logging
 from app import on_initial,setup_database
 import signal
 import sys
+import logging.handlers
 
 # Number of worker processes
 workers = 5
@@ -19,7 +20,7 @@ certfile = 'cert.pem'
 keyfile = 'key.pem'
 
 # Timeout configuration
-timeout = 120
+timeout = 100
 keepalive = 10
 
 # Log configuration
@@ -28,8 +29,26 @@ accesslog = logfile
 errorlog = logfile
 loglevel = 'error'
 
+# Configure rotating logs
+log_maxbytes = 10 * 1024 * 1024  # 100 MB
+log_backups = 3  # Keep 10 backup logs
+
+# Setup rotating file handler
+log_handler = logging.handlers.RotatingFileHandler(
+    logfile,
+    maxBytes=log_maxbytes,
+    backupCount=log_backups
+)
+
 # Configure logger
 logger = logging.getLogger('gunicorn.error')
+logger.setLevel(logging.getLevelName(loglevel.upper()))
+logger.addHandler(log_handler)
+
+# Also set up access log rotation
+access_logger = logging.getLogger('gunicorn.access')
+access_logger.setLevel(logging.INFO)
+access_logger.addHandler(log_handler)
 
 def on_starting(server):
     """Called just before the master process is initialized"""

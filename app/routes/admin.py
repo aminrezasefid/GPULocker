@@ -86,3 +86,5 @@ def reset_all():
             client.close()
     
     return redirect(url_for('dashboard.dashboard'))
+
+

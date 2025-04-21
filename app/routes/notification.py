@@ -6,14 +6,14 @@ from decouple import config
 from app.utils.logger import logger
 from app.routes.auth import login_required
 from app.utils.notification import *
-
+import time
 from app.utils.db import *
  
 notification_bp = Blueprint('notification', __name__)
 
-@notification_bp.route('/send_notification', methods=['POST'])
+@notification_bp.route('/send_notification_route', methods=['POST'])
 @login_required
-def send_notification():
+def send_notification_route():
     # Check if user is admin
     if not session.get('is_admin', False):
         flash('Access denied', 'error')
@@ -34,23 +34,14 @@ def send_notification():
             
             # Create a notification for each user
             for username in users:
-                db.notifications.insert_one({
-                    'username': username,
-                    'message': message,
-                    'read': False,
-                    'created_at': datetime.now()
-                })
+                send_notification(username,message)
+                time.sleep(.1)
+
             
             flash(f'Notification sent to all users', 'success')
         else:
             # Create a notification for the specific user
-            db.notifications.insert_one({
-                'username': recipient,
-                'message': message,
-                'read': False,
-                'created_at': datetime.now()
-            })
-            
+            send_notification(recipient,message)
             flash(f'Notification sent to {recipient}', 'success')
             
         return redirect(url_for('notification.admin_notifications'))

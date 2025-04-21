@@ -1,3 +1,4 @@
+from app.config import REDIS_BINARY
 from flask import Blueprint,render_template,Response, request, session, redirect, url_for, flash
 from decouple import config,Csv
 from app.utils.logger import logger
@@ -7,11 +8,11 @@ from app.utils.gpu_monitoring import get_gpu_status,unallocate_gpu,get_gpu_confi
 from app.utils.db import *
 from app.utils.redis_utils import DistributedLock
 from app.config import REDIS_CLIENT,REDIS_KEYS,DISK_CACHE_TIMEOUT
-from app.utils.disk import get_disk_cache,get_user_disk_usage,set_disk_cache
+from app.utils.disk import get_disk_cache,get_user_disk_usage,set_disk_cache,update_user_disk_cache
 from app.routes.auth import login_required
 import json
 from datetime import datetime
-
+from rq import Queue
 from app.utils.gpu_monitoring import get_available_gpus
 from app.utils.notification import get_unread_notifications_count
 dashboard_bp = Blueprint('dashboard', __name__,static_url_path="dashboard")
@@ -150,6 +151,12 @@ def dashboard():
                 all_allocations = all_allocations[admin_start:admin_end] if all_allocations else []
                 all_allocations = format_allocations_for_display(all_allocations)
             
+            # Get all users for admin dropdown
+            if is_admin:
+                all_users = [user['username'] for user in db.users.find({}, {'username': 1})]
+            else:
+                all_users = []
+            
             # Get available GPUs from Redis
             available_gpus = get_available_gpus()
             
@@ -157,18 +164,20 @@ def dashboard():
             disk_usage_data = get_disk_cache(username)
             if disk_usage_data is None:
                 # Cache miss - calculate and cache
-                used_bytes, used_by_others_bytes, total_bytes = get_user_disk_usage(username)
+                redis_conn = REDIS_BINARY
+                q = Queue(connection=redis_conn)
+                q.enqueue(update_user_disk_cache, username)
                 disk_usage_data = {
-                    'used': format_size(used_bytes),
-                    'used_by_others': format_size(used_by_others_bytes),
-                    'free': format_size(total_bytes - used_bytes - used_by_others_bytes),
-                    'total': format_size(total_bytes),
-                    'percent_used': round((used_bytes / total_bytes) * 100, 2) if total_bytes > 0 else 0,
-                    'percent_others': round((used_by_others_bytes / total_bytes) * 100, 2) if total_bytes > 0 else 0,
-                    'percent_free': round(((total_bytes - used_bytes - used_by_others_bytes) / total_bytes) * 100, 2) if total_bytes > 0 else 0
+                    'used': "Loading...",
+                    'used_by_others': "Loading...",
+                    'free': "Loading...",
+                    'total': "Loading...",
+                    'percent_used': 0,
+                    'percent_others': 0,
+                    'percent_free': 0
                 }
                 # Cache the result
-                set_disk_cache(username, disk_usage_data, timeout=DISK_CACHE_TIMEOUT)
+                #set_disk_cache(username, disk_usage_data, timeout=DISK_CACHE_TIMEOUT)
             
             # Get unread notifications count
             unread_count = get_unread_notifications_count(username)
@@ -183,7 +192,11 @@ def dashboard():
                 # Cache GPU status for a short time (e.g., 5 seconds)
                 REDIS_CLIENT.setex(gpu_status_key, 5, json.dumps(gpu_status))
             
+            # Check if user is registered for notifications
+            user_notif_entry = db.gpu_notif_list.find_one({'username': username})
+            is_registered_for_notifications = user_notif_entry is not None
             return render_template('dashboard.html',
+                                username=username,
                                 gpu_dict=available_gpus,
                                 allocations=current_allocations,
                                 all_allocations=all_allocations,
@@ -195,7 +208,9 @@ def dashboard():
                                 disk_usage=disk_usage_data,
                                 unread_notifications_count=unread_count,
                                 gpu_status=gpu_status,
-                                now=datetime.now())
+                                now=datetime.now(),
+                                is_registered_for_notifications=is_registered_for_notifications,
+                                all_users=all_users)
             
     except Exception as e:
         logger.error(f"Error in dashboard route: {str(e)}")
@@ -335,6 +350,17 @@ def lock_gpu():
     requested_days = {}
     username = session['username']
     
+    # Check if user is admin
+    authorized_users = config('PRIVILEGED_USERS', cast=Csv())
+    is_admin = username in authorized_users
+    
+    # Get the target user (for admin allocations)
+    target_user = request.form.get('target_user', username)
+    
+    # If not admin, ensure target_user is the current user
+    if not is_admin:
+        target_user = username
+    
     try:
         # Get GPU configuration from Redis
         gpu_config = get_gpu_config()
@@ -413,7 +439,7 @@ def lock_gpu():
                                 
                                 # Allocate GPU to user
                                 success, result = allocate_gpu(
-                                    username,
+                                    target_user,
                                     gpu_type,
                                     gpu_id,
                                     requested_days[gpu_type]
@@ -435,7 +461,11 @@ def lock_gpu():
                     set_available_gpus(available_gpus)
                     
                     if allocated_gpus:
-                        flash(f"Successfully allocated GPUs: {allocated_gpus} with expiration times: {requested_days} days", "success")
+                        if is_admin and target_user != username:
+                            logger.info(f"Admin {username} allocated GPU {gpu_id} to user {target_user}")
+                            flash(f"Successfully allocated GPUs: {allocated_gpus} to user {target_user} with expiration times: {requested_days} days", "success")
+                        else:
+                            flash(f"Successfully allocated GPUs: {allocated_gpus} with expiration times: {requested_days} days", "success")
                     else:
                         flash("No GPUs were allocated", "info")
                     
@@ -449,7 +479,7 @@ def lock_gpu():
                     for alloc in successful_allocations:
                         try:
                             # Remove GPU access
-                            set_gpu_permission(username, alloc['gpu_id'], grant=False)
+                            set_gpu_permission(target_user, alloc['gpu_id'], grant=False)
                             
                             # Remove database entry
                             db.gpu_allocations.delete_one({'_id': alloc['allocation_id']})
@@ -471,6 +501,28 @@ def lock_gpu():
         logger.error(f"Unexpected error in lock_gpu: {str(e)}")
         flash("An unexpected error occurred", "error")
         return redirect(url_for('dashboard.dashboard'))
+
+@dashboard_bp.route('/notify_user', methods=['POST'])
+@login_required
+def notify_user():
+    from flask import jsonify
+    username = session['username']
+    
+    try:
+        with MongoDBConnection() as (client, db):
+            existing_entry = db.gpu_notif_list.find_one({'username': username})
+                
+            if not existing_entry:
+                db.gpu_notif_list.insert_one({'username': username})
+                logger.info(f"User '{username}' successfully registered for GPU availability notifications.")
+                return jsonify({"message": "You will be notified when GPUs are available.", "status": "success"})
+            else:
+                logger.warning(f"User '{username}' attempted to register for notifications multiple times.")
+                return jsonify({"message": "You are already registered for notifications.", "status": "info"})
+    except Exception as e:
+        logger.error(f"Error adding user to notification list: {str(e)}")
+        return jsonify({"message": "Failed to register for notifications.", "status": "error"}), 500
+
 def format_allocations_for_display(allocations):
     """Format allocation dates for display using jdatetime or regular datetime based on config"""
     # Get configuration for date format from .env
@@ -499,22 +551,3 @@ def format_allocations_for_display(allocations):
             allocation['comment_str'] = '-'    
     return allocations
 
-def format_size(size_bytes):
-    """Format bytes to human-readable size
-    
-    Args:
-        size_bytes: Size in bytes
-        
-    Returns:
-        str: Formatted size string
-    """
-    if size_bytes == 0:
-        return "0B"
-    
-    size_names = ("B", "KB", "MB", "GB", "TB", "PB")
-    i = 0
-    while size_bytes >= 1024 and i < len(size_names) - 1:
-        size_bytes /= 1024
-        i += 1
-    
-    return f"{size_bytes:.2f} {size_names[i]}"

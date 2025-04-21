@@ -34,6 +34,8 @@ def setup_database():
             
         if 'users' not in db.list_collection_names():
             db.create_collection('users')
+        if 'gpu_notif_list' not in db.list_collection_names():
+            db.create_collection('gpu_notif_list')
             # Initialize with the list of users
         default_users = [
             "root", "sync", "user01", "admin", "zteam", "ehsan", "amin", 
@@ -56,6 +58,9 @@ def setup_database():
         logger.info("Database setup complete")
     finally:
         client.close()
+
+    
+
 
 def update_allocation_status(db, allocation_id, released=True, comment=None):
     """Update the status of a GPU allocation in the database

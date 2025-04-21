@@ -8,6 +8,7 @@ import asyncio
 #import schedule as sched_module
 from datetime import datetime, timedelta
 from app.utils.logger import logger
+from app.utils import notification
 from app.utils.db import MongoDBConnection
 from decouple import config, Csv
 from app.utils.db import get_db_connection,update_allocation_status
@@ -437,7 +438,34 @@ def restore_monitoring_jobs():
     except Exception as e:
         logger.error(f"Error restoring monitoring jobs: {str(e)}")
 
-
+def notify_users_of_unallocation():
+    """Notify users about the unallocation of a GPU"""
+    try:
+        # Logic to send notification (e.g., email, message, etc.)
+        with MongoDBConnection() as (client, db):
+            users_to_notify = list(db.gpu_notif_list.find())
+            if len(users_to_notify)==0:
+                logger.info("No users waiting for notification")
+                return
+            notification_message = "New GPU is available."
+            for user in users_to_notify:
+                username = user.get("username")
+                if username:
+                    
+                    # Delete user from notification list after sending
+                    db.gpu_notif_list.delete_one({'username': username})
+                    logger.info(f"Deleted user {username} from notification list after sending notification.")
+                    # Send notification
+                    notification.send_notification(username, notification_message)
+                    logger.info(f"Available GPU Notification sent to user: {username}")
+                else:
+                    logger.warning("Found a user entry without a username, skipping deletion.")
+        
+        # Log the completion of the notification process
+        logger.info("All notifications sent and users deleted from the notification list.")
+        
+    except Exception as e:
+        logger.error(f"Failed to send notification for unallocation: {str(e)}")
 
 def unallocate_gpu(username, gpu_id, gpu_type, allocation_id, db, comment=None):
     """Release a GPU allocation with proper cleanup of permissions and database
@@ -521,6 +549,9 @@ def unallocate_gpu(username, gpu_id, gpu_type, allocation_id, db, comment=None):
                             # Step 3: Remove user's access to the GPU
                             if set_gpu_permission(username, gpu_id, grant=False):
                                 logger.info(f"Successfully released GPU {gpu_id} from user {username}")
+                                
+                                # Notify users about the unallocation
+                                notify_users_of_unallocation()
                                 return True
                             else:
                                 raise Exception(f"Failed to remove permissions for GPU {gpu_id}")
@@ -858,22 +889,9 @@ def check_and_revoke_idle_allocation(allocation):
                 else:
                     authorized_users = config('PRIVILEGED_USERS', cast=Csv())
                     for user in authorized_users:
-                        db.notifications.insert_one({
-                            'username': user,
-                            'message': f"GPU {gpu_id} is being idle at least {idle_hours} hours, but {username} has active process on it.",
-                            'read': False,
-                            'created_at': datetime.now()
-                        })
-
-                    db.notifications.insert_one({
-                        'username': username,
-                        'message': f"GPU {gpu_id} is being idle at least {idle_hours} hours, but you have active process on it please consider releasing it",
-                        'read': False,
-                        'created_at': datetime.now()
-                    })
-                    application=build_bot()
-                    asyncio.run(application.bot.send_message(chat_id=config('TELEGRAM_CHAT_ID'), text=f"GPU {gpu_id} is being idle at least {idle_hours} hours, but {username} has active process on it."))
-                    application.stop()
+                        notification.send_notification(user,f"GPU {gpu_id} is being idle at least {idle_hours} hours, but {username} has active process on it.")
+                   
+                    notification.send_notification(username,f"GPU {gpu_id} is being idle at least {idle_hours} hours, but you have active process on it please consider releasing it.")
                     logger.warning(f"GPU {gpu_id} is being used by {username}, but utilization and memory are below thresholds")
                     return False
             else:

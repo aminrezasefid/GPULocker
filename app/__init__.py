@@ -1,21 +1,22 @@
 from flask import Flask
-from decouple import config
+
 import logging
 from logging.handlers import RotatingFileHandler
+import multiprocessing
 import os
-from tg_bot.bot import build_bot
+from tg_bot.bot import run_bot
 import threading
 from redis.lock import Lock as RedisLock
 import schedule as sched_module
 from app.routes import init_routes
 from app.utils.db import setup_database
 from app.utils.gpu_monitoring import initialize_gpu_config, initialize_gpu_tracking,reset_user_access,reset_gpu_access,check_allocation_utilization,check_and_revoke_idle_allocation
-from app.utils.gpu_monitoring  import restore_monitoring_jobs,check_expired_reservations
+from app.utils.gpu_monitoring  import restore_monitoring_jobs,check_expired_reservations,notify_users_of_unallocation
 from app.config import REDIS_CLIENT, REDIS_BINARY, REDIS_KEYS
 from app.utils.logger import logger
-from decouple import config
 import json
 import pickle
+from decouple import config, Csv
 def threaded_function():
     import time
     try:
@@ -114,8 +115,7 @@ logging.getLogger('werkzeug').addFilter(APIStatusFilter())
 def on_initial():
     """Initialize system state - should only be called by master worker"""
     logger.info(f'Starting GPULocker application - worker_id: {os.environ.get("GUNICORN_WORKER_ID")}')
-    #bot = build_bot()
-    #bot.send_message(chat_id=config("TELEGRAM_BOT_ADMIN_ID"), text="GPULocker application started")
+    
     try:
         init_lock = RedisLock(
             REDIS_CLIENT,
@@ -150,17 +150,24 @@ def on_initial():
                 logger.error("Error resetting user access")
                 return False
             restore_monitoring_jobs()
+            
             # Set up scheduled tasks
             sched_module.every(config('CHECK_FOR_IDLE_GPU_HOURS',default=6,cast=int)).hours.do(check_expired_reservations)
             
             # Start the scheduler thread
-            thread = threading.Thread(target=threaded_function)
-            thread.daemon = True  # Make thread daemon so it exits when main process exits
-            thread.start()
+            scheduler_thread = threading.Thread(target=threaded_function)
+            scheduler_thread.daemon = True  # Make thread daemon so it exits when main process exits
+            scheduler_thread.start()
+            
+            # Start the Telegram bot in a separate thread
+            process =multiprocessing.Process(target=run_bot)
+            process.start()
+            logger.info("Telegram bot started in background thread")
                 
             # Set initialization flag in Redis
             REDIS_CLIENT.set(REDIS_KEYS['system_initialized'], '1')
             logger.info("System initialization completed successfully")
+            notify_users_of_unallocation()
             return True
             
         finally:
@@ -168,12 +175,51 @@ def on_initial():
             init_lock.release()
             
     except Exception as e:
-        logger.error(f"Error during system initialization: {str(e)}")
+        logger.error(f"Error during system initialization: {str(e)}",exc_info=True)
         return False
     
+import time
+from flask import session
+from flask import Blueprint,render_template, request, session, redirect, url_for, flash
+from app.config import REDIS_CLIENT
+
 def create_app():
     """Create and configure Flask application"""
     app = Flask(__name__)
     app.secret_key = config('SECRET_KEY')
+
+    @app.before_request
+    def check_app_disabled():
+        is_disabled=REDIS_CLIENT.get("app_disable")
+        is_admin=session.get("is_admin",False)
+        
+        if is_disabled=="disable" and request.path != '/enable' and not is_admin:
+            time.sleep(300)  # Just hang the request forever (not really ideal)
+
+    @app.route('/disable')
+    def disable_app():
+        username = session['username']
+        authorized_users = config('PRIVILEGED_USERS', cast=Csv())
+        # Check if the user is admin
+        if username not in authorized_users:
+            logger.warning(f"Unauthorized reset attempt by user {username}")
+            flash('You are not authorized to perform this action', 'error')
+            return redirect(url_for('dashboard.dashboard'))
+        REDIS_CLIENT.set("app_disable","disable")
+        return "App disabled."
+
+
+    @app.route('/enable')
+    def enable_app():
+        username = session['username']
+        authorized_users = config('PRIVILEGED_USERS', cast=Csv())
+        # Check if the user is admin
+        if username not in authorized_users:
+            logger.warning(f"Unauthorized reset attempt by user {username}")
+            flash('You are not authorized to perform this action', 'error')
+            return redirect(url_for('dashboard.dashboard'))
+        
+        REDIS_CLIENT.delete("app_disable")
+        return "App enabled."
     init_routes(app)
     return app

@@ -17,6 +17,20 @@
 </div>
 <h2>Available GPUs:</h2>
 <form method="POST" action="{{ url_for('dashboard.lock_gpu') }}">
+    {% if is_admin %}
+    <div class="form-group mb-3">
+        <label for="target_user">Allocate GPUs for User:</label>
+        <select name="target_user" id="target_user" class="form-control">
+            <option value="{{ username }}">{{ username }} (Me)</option>
+            {% for user in all_users %}
+                {% if user != username %}
+                <option value="{{ user }}">{{ user }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+    
     {% for gpu_type, gpu_ids in gpu_dict.items() %}
     <div class="gpu-row">
         <div class="gpu-info">
@@ -34,8 +48,14 @@
     </div>
     {% endfor %}
     <input type="submit" value="Lock GPUs">
-</form>
+    {% if gpu_dict and gpu_dict.values() | map('length') | sum == 0 and not is_registered_for_notifications %}
+        <button type="button"  class="btn btn-warning" id="notify-button" onclick="notifyMe()">Notify Me When Available</button>
+    {% endif %}
 
+</form>
+<div id="notification-container">
+
+</div>
 <h2>Your GPU Allocations</h2>
 {% if allocations %}
 <table class="table">
@@ -237,5 +257,42 @@
         </nav>
     </div>
 {% endif %}
+
+<script>
+
+function notifyMe() {
+    fetch("{{ url_for('dashboard.notify_user') }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        let alertClass = data.status;
+
+        let alertBox = document.createElement("p");
+        alertBox.className = `message-${alertClass}`;
+        alertBox.textContent = data.message;
+        
+        document.getElementById("notification-container").appendChild(alertBox);
+
+        // Hide the caller button if the status is not an error
+        if (alertClass !== 'error') {
+            document.getElementById('notify-button').style.display = 'none';
+        }
+
+        setTimeout(() => {
+            alertBox.remove();
+        }, 3000);  // Remove alert after 3 seconds
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("An error occurred while trying to register for notifications.");
+    });
+}
+
+</script>
 
 {% endblock %}

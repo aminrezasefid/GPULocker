@@ -4,6 +4,42 @@ import shutil
 import subprocess
 from app.utils.logger import logger
 import pickle
+def format_size(size_bytes):
+    """Format bytes to human-readable size
+    
+    Args:
+        size_bytes: Size in bytes
+        
+    Returns:
+        str: Formatted size string
+    """
+    if size_bytes == 0:
+        return "0B"
+    
+    size_names = ("B", "KB", "MB", "GB", "TB", "PB")
+    i = 0
+    while size_bytes >= 1024 and i < len(size_names) - 1:
+        size_bytes /= 1024
+        i += 1
+    
+    return f"{size_bytes:.2f} {size_names[i]}"
+def update_user_disk_cache(username):
+    used, others, total = get_user_disk_usage(username)
+    try:
+        data = {
+            'used': format_size(used),
+            'used_by_others': format_size(others),
+            'free': format_size(total - used - others),
+            'total': format_size(total),
+            'percent_used': round((used / total) * 100, 2) if total > 0 else 0,
+            'percent_others': round((others / total) * 100, 2) if total > 0 else 0,
+            'percent_free': round(((total - used - others) / total) * 100, 2) if total > 0 else 0
+        }
+        set_disk_cache(username, data)
+        logger.info(f"Disk usage cache updated for {username}")
+    except Exception as e:
+        logger.error(f"Failed to update disk usage cache for {username}: {e}")
+
 
 def get_user_disk_usage(username):
     """Get disk usage for a user with Redis caching
@@ -40,9 +76,13 @@ def get_user_disk_usage(username):
             # Get user's specific usage by running du command
             du_process = subprocess.run(
                 ['sudo', 'du', '-sb', home_dir],
-                capture_output=True, text=True, check=True
+                capture_output=True, text=True,
             )
-            user_used = int(du_process.stdout.split()[0])
+            try:
+                user_used = int(du_process.stdout.split()[0])
+            except Exception as e:
+                logger.error(f"Error calculating disk usage for {username}: {str(e)}")
+                return (0, 0, 0)
             
             # Calculate space used by others
             used_by_others = used_total - user_used
