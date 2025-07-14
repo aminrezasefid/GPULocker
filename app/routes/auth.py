@@ -73,15 +73,20 @@ def login_required(f):
             return redirect(url_for('auth.login'))
         
         # Check if user has registered Telegram
-        client, db = get_db_connection()
-        try:
-            user = db.users.find_one({"username": session['username']})
-            if not user or not user.get('tg_id'):
-                # User doesn't have telegram ID, redirect to registration
-                if request.endpoint != 'auth.register_telegram':
-                    return redirect(url_for('auth.register_telegram'))
-        finally:
-            client.close()
+        
+        if config("TG_ACCOUNT_REQUIRED",cast=bool):
+            client, db = get_db_connection()
+            logger.info(f"user inside tg account")
+            try:
+                username = session['username']
+                # Check if the user has any telegram IDs in the telegram_users collection
+                telegram_user = db.telegram_users.find_one({"username": username})
+                if not telegram_user:
+                    # User doesn't have telegram ID, redirect to registration
+                    if request.endpoint != 'auth.register_telegram':
+                        return redirect(url_for('auth.register_telegram'))
+            finally:
+                client.close()
             
         logger.info(f"User {session['username']} accessed {request.endpoint} from {request.remote_addr}")
         return f(*args, **kwargs)
@@ -94,10 +99,11 @@ def register_telegram():
         
     username = session['username']
     with MongoDBConnection() as (client,db):
-        user = db.users.find_one({"username": username})
-        tg_id=user.get("tg_id")
-        if tg_id:
+        # Check if the user has any telegram IDs in the telegram_users collection
+        tg_user = db.telegram_users.find_one({"username": username})
+        if tg_user:
             return redirect(url_for('dashboard.dashboard'))
+    
     encrypted_username = encrypt_username(username)
     
     # Get bot username from environment

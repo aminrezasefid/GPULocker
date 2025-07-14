@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Telegram Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Telegram Settings</h2>
+                </div>
+                <div class="card-body">
+                    <p>Configure Telegram notifications for GPU allocations and important updates.</p>
+                    
+                    {% if telegram_accounts %}
+                    <h3>Connected Telegram Accounts</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Telegram Username</th>
+                                <th>Connected On</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for account in telegram_accounts %}
+                            <tr>
+                                <td>{{ account.tg_username if account.tg_username else 'Unnamed Account' }}</td>
+                                <td>{{ account.registered_at_str }}</td>
+                                <td>
+                                    <form action="{{ url_for('telegram.remove_telegram_account') }}" method="post">
+                                        <input type="hidden" name="telegram_id" value="{{ account._id }}">
+                                        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <h3>Add New Telegram Account</h3>
+                        <p>Follow these steps to add a new Telegram account:</p>
+                        <ol>
+                            <li>Click on the button below to open Telegram and start a chat with our bot</li>
+                            <li>The bot will automatically register your account</li>
+                        </ol>
+                        
+                        <div class="text-center mt-4">
+                            <a href="{{ telegram_link }}" class="btn btn-primary btn-lg" target="_blank">
+                                <i class="fas fa-paper-plane mr-2"></i> Connect New Telegram Account
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

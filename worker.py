@@ -1,6 +1,5 @@
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from decouple import config, Csv
 from app.utils.logger import logger
 from app.config import REDIS_BINARY

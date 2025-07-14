@@ -2,12 +2,13 @@ import os
 from app.utils.logger import logger
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
-from decouple import config
+from decouple import config,Csv
 # Remove the auth import to break the circular dependency
 # from app.routes.auth import decrypt_username
 from app.utils.db import MongoDBConnection
 from app.utils.crypto import decrypt_username
 import asyncio
+from datetime import datetime
 # Enable logging
 
 
@@ -15,6 +16,9 @@ import asyncio
 TOKEN = config("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
     raise ValueError("No TELEGRAM_BOT_TOKEN found in environment variables")
+
+# Get admin telegram ID for notifications
+ADMIN_TELEGRAM_IDS = config("TELEGRAM_CHAT_ID", default=None,cast=Csv())
 
 # Add decryption function directly here to avoid circular imports
 
@@ -33,22 +37,55 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         username = decrypt_username(encrypted_username)
         
         if username:
-            # Store the telegram ID in the user document
+            # Store the telegram ID in the telegram_users collection
             with MongoDBConnection() as (client, db):
-                result = db.users.update_one(
-                    {"username": username},
-                    {"$set": {"tg_id": chat_id}}
-                )
+                # Check if this telegram ID is already registered for this user
+                existing = db.telegram_users.find_one({
+                    "username": username,
+                    "tg_id": chat_id
+                })
                 
-                if result.modified_count > 0:
+                if existing:
+                    await update.message.reply_html(
+                        f"Hi {user.mention_html()}! Your Telegram account is already connected to the GPULocker system."
+                    )
+                    logger.info(f"TGLOG:User {username} attempted to reconnect existing Telegram account (ID: {chat_id})")
+                    return
+                
+                # Insert new record in telegram_users collection
+                result = db.telegram_users.insert_one({
+                    "username": username,
+                    "tg_id": chat_id,
+                    "tg_username": user.username,
+                    "registered_at": datetime.now()
+                })
+                
+                if result.inserted_id:
                     await update.message.reply_html(
                         f"Hi {user.mention_html()}! Your account has been successfully connected to the GPULocker system. "
                         f"You will now receive notifications about your GPU allocations and other important updates."
                     )
                     logger.info(f"TGLOG:User {username} connected Telegram account (ID: {chat_id})")
+                    logger.info(f"TGLOG:Admin Telegram IDs: {ADMIN_TELEGRAM_IDS}")
+                    # Notify admin about new registration
+                    if ADMIN_TELEGRAM_IDS:
+                        for admin_id in ADMIN_TELEGRAM_IDS:
+                            try:
+                                # Create a clickable mention of the user
+                                user_mention = f'<a href="tg://user?id={user.id}">{user.first_name}</a>'
+                                admin_message = f"New registration: User {username} ({user_mention}) connected their Telegram account."
+                                await context.bot.send_message(
+                                    chat_id=admin_id,
+                                    text=admin_message,
+                                    parse_mode="HTML"
+                                )
+                                logger.info(f"Admin notification sent about {username}'s registration")
+                            except Exception as e:
+                                logger.error(f"Failed to send admin notification: {e}", exc_info=True)
+                    
                     return
                 else:
-                    logger.warning(f"TGLOG:Failed to find user {username} for Telegram registration")
+                    logger.warning(f"TGLOG:Failed to register Telegram ID for user {username}")
     
     # Regular start message if not registering
     await update.message.reply_html(
@@ -101,7 +138,7 @@ def run_bot():
         # Use asyncio.run to create and manage the event loop
         asyncio.run(bot.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True))
     except Exception as e:
-        logger.error(f"TGLOG:Bot polling failed with error: {str(e)}")
+        logger.error(f"TGLOG:Bot polling failed with error: {str(e)}",exc_info=True)
     finally:
         logger.info("TGLOG:Bot stopped")
 

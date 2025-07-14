@@ -4,7 +4,6 @@ import logging
 from logging.handlers import RotatingFileHandler
 import multiprocessing
 import os
-from tg_bot.bot import run_bot
 import threading
 from redis.lock import Lock as RedisLock
 import schedule as sched_module
@@ -160,8 +159,8 @@ def on_initial():
             scheduler_thread.start()
             
             # Start the Telegram bot in a separate thread
-            process =multiprocessing.Process(target=run_bot)
-            process.start()
+            #process =multiprocessing.Process(target=run_bot)
+            #process.start()
             logger.info("Telegram bot started in background thread")
                 
             # Set initialization flag in Redis

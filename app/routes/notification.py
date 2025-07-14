@@ -1,6 +1,7 @@
 from flask import Blueprint,render_template, request, session, redirect, url_for, flash
 import pam
 import pwd
+from app.config import enqueue_job
 import pymongo
 from decouple import config
 from app.utils.logger import logger
@@ -33,9 +34,11 @@ def send_notification_route():
             users = [user['username'] for user in db.users.find({}, {'username': 1})]
             
             # Create a notification for each user
-            for username in users:
-                send_notification(username,message)
-                time.sleep(.1)
+            #users=["amin"]*15
+            enqueue_job(send_bulk_notification,message,users)
+            # for username in users:
+            #     send_notification(username,message)
+            #     time.sleep(.1)
 
             
             flash(f'Notification sent to all users', 'success')

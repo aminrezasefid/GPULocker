@@ -1,4 +1,4 @@
-from app.config import REDIS_BINARY
+from app.config import enqueue_job
 from flask import Blueprint,render_template,Response, request, session, redirect, url_for, flash
 from decouple import config,Csv
 from app.utils.logger import logger
@@ -12,7 +12,6 @@ from app.utils.disk import get_disk_cache,get_user_disk_usage,set_disk_cache,upd
 from app.routes.auth import login_required
 import json
 from datetime import datetime
-from rq import Queue
 from app.utils.gpu_monitoring import get_available_gpus
 from app.utils.notification import get_unread_notifications_count
 dashboard_bp = Blueprint('dashboard', __name__,static_url_path="dashboard")
@@ -164,9 +163,7 @@ def dashboard():
             disk_usage_data = get_disk_cache(username)
             if disk_usage_data is None:
                 # Cache miss - calculate and cache
-                redis_conn = REDIS_BINARY
-                q = Queue(connection=redis_conn)
-                q.enqueue(update_user_disk_cache, username)
+                enqueue_job(update_user_disk_cache, username)
                 disk_usage_data = {
                     'used': "Loading...",
                     'used_by_others': "Loading...",

@@ -1,5 +1,7 @@
 from decouple import config, Csv
 import redis
+from rq import Queue
+from app.utils.logger import logger
 DISK_CACHE_TIMEOUT = config("DISK_CACHE_TIMEOUT_SECONDS",10,cast=int)   # 10 minutes in seconds
 
 # Redis connection configuration
@@ -17,6 +19,13 @@ REDIS_BINARY = redis.Redis(
     db=config('REDIS_DB', default=0),
     decode_responses=False  # For binary data
 )
+
+
+def enqueue_job(job_name,*args,**kwargs):
+    logger.info(f"Enqueuing job {job_name} with args {args} and kwargs {kwargs}")
+    redis_conn = REDIS_BINARY
+    q = Queue(connection=redis_conn)
+    q.enqueue(job_name,*args,**kwargs)
 
 # Redis keys
 REDIS_KEYS = {

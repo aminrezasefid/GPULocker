@@ -17,7 +17,7 @@ from bson import ObjectId
 import json
 from app.config import REDIS_BINARY,REDIS_KEYS,REDIS_CLIENT
 from app.utils.redis_utils import get_available_gpus,set_available_gpus,DistributedLock
-from tg_bot.bot import build_bot
+from bot import build_bot
 def set_gpu_permission(username, gpu_id, grant=True):
     """Set or remove GPU permission for a user
     Args:
@@ -28,9 +28,9 @@ def set_gpu_permission(username, gpu_id, grant=True):
         bool: Success status
     """
     try:
-        authorized_users = config('PRIVILEGED_USERS', cast=Csv())
-        if username in authorized_users:
-            return True
+        # authorized_users = config('PRIVILEGED_USERS', cast=Csv())
+        # if username in authorized_users and not grant:
+        #     return True
         user_info = pwd.getpwnam(username)
         uid = user_info.pw_uid
         gpu_device = f'/dev/nvidia{gpu_id}'
